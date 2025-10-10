@@ -29,9 +29,7 @@ import configManager from '../utils/ConfigManager';
         });
       }
   
-      const reason = args.slice(1).join(' ') || 'No reason provided';
-      const inviteLink = 'https://discord.gg/x7hppDWFDZ';
-  
+      const reason = args.slice(1).join(' ') || 'No reason provided';  
       try {
         const user = await message.guild?.members.fetch(userId).catch(() => null);
        if (!user) {
@@ -54,7 +52,7 @@ import configManager from '../utils/ConfigManager';
         // DM user
         try {
           await user.send(
-            `You have been __**SOFTBANNED**__ from **${message.guild?.name}** for the following reason: ${reason}.\nYou may rejoin using this invite: ${inviteLink}`
+            `You have been __**SOFTBANNED**__ from **${message.guild?.name}** for the following reason: ${reason}.`
           );
         } catch {
           const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '');
