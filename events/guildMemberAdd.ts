@@ -65,18 +65,7 @@ const event: Event = {
       }
     }
 
-    // Log member join if logging is enabled
-    if (config.logging.enabled && config.logging.events.memberJoin) {
-      const logChannelId = config.logging.memberLogChannelId || config.logging.logChannelId;
-      const logChannel = member.guild.channels.cache.get(logChannelId || '');
-      
-      if (logChannel?.isTextBased()) {
-        logChannel.send({
-          content: `**${member.displayName}** (${member.user.tag}) joined the server.`,
-          allowedMentions: { parse: [] }
-        });
-      }
-    }
+    // Do not log join here; welcome feature handles member joins
   },
 };
 

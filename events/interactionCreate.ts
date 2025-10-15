@@ -2,6 +2,7 @@ import { Events, Interaction, StringSelectMenuInteraction, EmbedBuilder, Permiss
 import { logError } from "../utils/errorLogger";
 import { ExtendedClient } from "../utils/ExtendedClient";
 import configManager from "../utils/ConfigManager";
+import idclass from "../utils/idclass";
 
 export default {
   name: Events.InteractionCreate,
@@ -28,7 +29,8 @@ export default {
         // Handle setup menu selections
         if (interaction.customId === 'setup_menu') {
           // Admin-only guard
-          if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+          const isOwner = (interaction as any).user?.id === idclass.ownershipID();
+          if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
             await interaction.reply({ content: 'You need Administrator to use setup.', ephemeral: true }).catch(() => {});
             return;
           }
@@ -37,7 +39,8 @@ export default {
         // no duration selection needed (auto-unban fixed at 10s)
       } else if (interaction.isRoleSelectMenu()) {
         if (interaction.customId === 'setup_role_mods') {
-          if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+          const isOwner = (interaction as any).user?.id === idclass.ownershipID();
+          if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
             await interaction.reply({ content: 'You need Administrator to use setup.', ephemeral: true }).catch(() => {});
             return;
           }
@@ -55,7 +58,8 @@ export default {
           }
         }
       } else if (interaction.isChannelSelectMenu()) {
-        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+        const isOwner = (interaction as any).user?.id === idclass.ownershipID();
+        if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
           await interaction.reply({ content: 'You need Administrator to use setup.', ephemeral: true }).catch(() => {});
           return;
         }
@@ -96,7 +100,8 @@ export default {
         }
       }
       else if (interaction.isButton()) {
-        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+        const isOwner = (interaction as any).user?.id === idclass.ownershipID();
+        if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
           await interaction.reply({ content: 'You need Administrator to use setup.', ephemeral: true }).catch(() => {});
           return;
         }

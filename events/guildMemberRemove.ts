@@ -37,18 +37,7 @@ const event: Event = {
       }
     }
 
-    // Log member leave if logging is enabled
-    if (config.logging.enabled && config.logging.events.memberLeave) {
-      const logChannelId = config.logging.memberLogChannelId || config.logging.logChannelId;
-      const logChannel = member.guild.channels.cache.get(logChannelId || '');
-      
-      if (logChannel?.isTextBased()) {
-        logChannel.send({
-          content: `**${member.displayName}** (${member.user.tag}) left the server.`,
-          allowedMentions: { parse: [] }
-        });
-      }
-    }
+    // Do not log leave here; goodbye feature handles member leaves
   },
 };
 
