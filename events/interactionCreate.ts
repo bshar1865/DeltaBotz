@@ -1,4 +1,5 @@
 import { Events, Interaction, StringSelectMenuInteraction, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ChannelType } from "discord.js";
+import { logError } from "../utils/errorLogger";
 import { ExtendedClient } from "../utils/ExtendedClient";
 import configManager from "../utils/ConfigManager";
 
@@ -32,6 +33,7 @@ export default {
           }
           await handleSetupMenu(interaction as StringSelectMenuInteraction);
         }
+        // no duration selection needed (auto-unban fixed at 10s)
       } else if (interaction.isRoleSelectMenu()) {
         if (interaction.customId === 'setup_role_mods') {
           if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
@@ -69,9 +71,10 @@ export default {
           config.features = {
             ...(config.features || {}),
             honeypot: {
-              ...((config.features && (config.features as any).honeypot) || { enabled: true, deleteMessage: true, autoBan: true }),
+              ...((config.features && (config.features as any).honeypot) || { enabled: true, deleteMessage: true, autoUnban: false }),
               enabled: Boolean(channelId),
               channelId,
+              autoBan: Boolean(channelId),
             },
           } as any;
           await configManager.saveServerConfig(config);
@@ -112,8 +115,8 @@ export default {
         if (interaction.customId === 'toggle_restore') {
           (config.features as any).roleRestore = { ...((config.features as any).roleRestore||{}), enabled: !(config.features as any)?.roleRestore?.enabled };
         }
-        if (interaction.customId === 'toggle_honeypot_autoban') {
-          (config.features as any).honeypot = { ...((config.features as any).honeypot||{}), autoBan: !((config.features as any)?.honeypot?.autoBan) };
+        if (interaction.customId === 'toggle_honeypot_autounban') {
+          (config.features as any).honeypot = { ...((config.features as any).honeypot||{}), autoUnban: !((config.features as any)?.honeypot?.autoUnban) };
         }
         if (interaction.customId === 'toggle_honeypot_delete') {
           (config.features as any).honeypot = { ...((config.features as any).honeypot||{}), deleteMessage: !((config.features as any)?.honeypot?.deleteMessage) };
@@ -128,6 +131,7 @@ export default {
       }
     } catch (error) {
       console.error("Error in InteractionCreate:", error);
+      try { await logError(error instanceof Error ? error : String(error), 'events/interactionCreate', { userId: (interaction as any).user?.id, guildId: (interaction as any).guildId }, client as any, (interaction as any).guild); } catch {}
     }
   },
 };
@@ -137,14 +141,14 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
   const value = interaction.values[0];
   const config = await configManager.getOrCreateConfig(interaction.guild);
 
-  let embed = new EmbedBuilder().setColor('#0099ff').setTimestamp();
+  let embed = new EmbedBuilder().setColor('#0099ff').setTimestamp().setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
   let rows: any[] | undefined;
 
   switch (value) {
     case 'roles':
       embed
         .setTitle('Mod roles')
-        .setDescription((config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map(r => `<@&${r}>`).join(', ') : 'None'));
+        .setDescription(((config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map(r => `<@&${r}>`).join(', ') : 'None')) + '\n\nNote: Re-select roles (including previously selected) to ensure they are included.');
       rows = buildRoleRows(true);
       break;
     case 'roles_edit':
@@ -165,7 +169,7 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
         .addFields(
           { name: 'Enabled', value: (config.features as any)?.honeypot?.enabled ? 'Yes' : 'No', inline: true },
           { name: 'Channel', value: (config.features as any)?.honeypot?.channelId ? `<#${(config.features as any).honeypot.channelId}>` : 'Not set', inline: true },
-          { name: 'Auto Ban', value: (config.features as any)?.honeypot?.autoBan ? 'Yes' : 'No', inline: true },
+          { name: 'Auto Unban', value: (config.features as any)?.honeypot?.autoUnban ? 'Yes' : 'No', inline: true },
           { name: 'Delete Messages', value: (config.features as any)?.honeypot?.deleteMessage ? 'Yes' : 'No', inline: true },
         );
       rows = buildHoneypotRows(true);
@@ -177,7 +181,8 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
           { name: 'Welcome', value: (config.features as any)?.welcome?.enabled ? 'Enabled' : 'Disabled', inline: true },
           { name: 'Goodbye', value: (config.features as any)?.goodbye?.enabled ? 'Enabled' : 'Disabled', inline: true },
           { name: 'Role Restore', value: (config.features as any)?.roleRestore?.enabled ? 'Enabled' : 'Disabled', inline: true },
-        );
+        )
+        .setFooter({ text: 'Note: Role Restore acts as a role logger; it stores a user\'s roles on leave and restores them when they rejoin.' });
       rows = buildFeaturesRows(true);
       break;
     default:
@@ -252,7 +257,7 @@ function buildHoneypotRows(includeBack?: boolean) {
     .setMinValues(0)
     .setMaxValues(1);
   const toggles = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId('toggle_honeypot_autoban').setLabel('Toggle Auto-ban').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('toggle_honeypot_autounban').setLabel('Toggle Auto-unban').setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId('toggle_honeypot_delete').setLabel('Toggle Delete Msgs').setStyle(ButtonStyle.Secondary),
   );
   const rows: any[] = [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(honeypotSelect), toggles];

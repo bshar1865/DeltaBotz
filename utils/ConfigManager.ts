@@ -143,22 +143,11 @@ export class ConfigManager {
           enabled: false,
           roleIds: [],
         },
-        leveling: {
-          enabled: false,
-          xpPerMessage: 10,
-          xpCooldown: 60000,
-        },
-        economy: {
-          enabled: false,
-          currencyName: 'coins',
-          currencySymbol: '🪙',
-          dailyAmount: 100,
-          workAmount: 50,
-        },
         honeypot: {
           enabled: false,
           deleteMessage: true,
           autoBan: true,
+          autoUnban: false,
         },
       },
       channels: {},
@@ -195,11 +184,47 @@ export class ConfigManager {
     try {
       const config = await this.getServerConfig(guildId);
       if (!config) return false;
-
-      (config as any)[section] = { ...(config as any)[section], ...data };
+      const current = (config as any)[section];
+      if (current && typeof current === 'object' && data && typeof data === 'object') {
+        (config as any)[section] = { ...current, ...data };
+      } else {
+        (config as any)[section] = data;
+      }
       return await this.saveServerConfig(config);
     } catch (error) {
       console.error(`Error updating config section ${section} for guild ${guildId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Update a nested section by path, merging only at the final segment.
+   * Example: ["features","honeypot"] with partial honeypot data.
+   */
+  async updateNestedSection(
+    guildId: string,
+    sectionPath: (keyof ServerConfig | string)[],
+    data: any
+  ): Promise<boolean> {
+    try {
+      const config = await this.getServerConfig(guildId);
+      if (!config) return false;
+      let ref: any = config;
+      for (let i = 0; i < sectionPath.length - 1; i++) {
+        const key = sectionPath[i] as string;
+        if (!ref[key] || typeof ref[key] !== 'object') ref[key] = {};
+        ref = ref[key];
+      }
+      const lastKey = sectionPath[sectionPath.length - 1] as string;
+      const current = ref[lastKey];
+      if (current && typeof current === 'object' && data && typeof data === 'object') {
+        ref[lastKey] = { ...current, ...data };
+      } else {
+        ref[lastKey] = data;
+      }
+      return await this.saveServerConfig(config);
+    } catch (error) {
+      console.error(`Error updating nested section ${sectionPath.join('.') } for guild ${guildId}:`, error);
       return false;
     }
   }

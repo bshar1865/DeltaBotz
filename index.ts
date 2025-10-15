@@ -11,7 +11,7 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { Command, Event } from './types';
-import './utils/errorLogger';
+import { logError } from './utils/errorLogger';
 
 // Client configuration
 const clientConfig: ClientOptions = {
@@ -152,12 +152,14 @@ async function init() {
     }
 }
 
-process.on('unhandledRejection', (error) => {
+process.on('unhandledRejection', async (error: any) => {
     console.error('Unhandled promise rejection:', error);
+    try { await logError(error instanceof Error ? error : String(error), 'unhandledRejection', undefined, client as any); } catch {}
 });
 
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', async (error: any) => {
     console.error('Uncaught exception:', error);
+    try { await logError(error instanceof Error ? error : String(error), 'uncaughtException', undefined, client as any); } catch {}
     process.exit(1);
 });
 

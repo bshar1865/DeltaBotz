@@ -1,5 +1,5 @@
 {
-  "name": "discord-honeypot",
+  "name": "deltabotz",
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
@@ -11,8 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^12.4.1",
-    "discord.js": "^14.22.1",
-    "dotenv": "^17.2.2",
+    "discord.js": "^14.23.2",
+    "dotenv": "^17.2.3",
     "quick.db": "^9.1.7"
   }
 }

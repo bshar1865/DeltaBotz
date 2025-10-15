@@ -1,10 +1,4 @@
-import {
-  Client,
-  Events,
-  TextChannel,
-  DMChannel,
-  NewsChannel
-} from 'discord.js';
+import { Client, Events, TextChannel, DMChannel, NewsChannel } from 'discord.js';
 import idclass from '../utils/idclass';
 
 const startTime = Date.now();

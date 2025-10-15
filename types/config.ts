@@ -95,24 +95,12 @@ export interface FeatureConfig {
     enabled: boolean;
     roleIds: string[];
   };
-  leveling: {
-    enabled: boolean;
-    xpPerMessage: number;
-    xpCooldown: number;
-    levelUpChannelId?: string;
-  };
-  economy: {
-    enabled: boolean;
-    currencyName: string;
-    currencySymbol: string;
-    dailyAmount: number;
-    workAmount: number;
-  };
   honeypot: {
     enabled: boolean;
     channelId?: string;
     deleteMessage: boolean;
     autoBan: boolean;
+    autoUnban?: boolean;
   };
 }
 
@@ -217,22 +205,11 @@ export const DEFAULT_CONFIG: Partial<ServerConfig> = {
       enabled: false,
       roleIds: [],
     },
-    leveling: {
-      enabled: false,
-      xpPerMessage: 10,
-      xpCooldown: 60000, // 1 minute
-    },
-    economy: {
-      enabled: false,
-      currencyName: 'coins',
-      currencySymbol: '🪙',
-      dailyAmount: 100,
-      workAmount: 50,
-    },
     honeypot: {
       enabled: false,
       deleteMessage: true,
       autoBan: true,
+      autoUnban: false,
     },
   },
   channels: {},

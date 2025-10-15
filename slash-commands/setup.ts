@@ -32,7 +32,7 @@ const command: Command = {
 
     const embed = new EmbedBuilder()
       .setTitle('Setup')
-      .setDescription('Use the menus below to configure the bot. Changes save instantly when you select.')
+      .setDescription('Use the menus below to configure the bot. Changes save instantly when you select.\nNote: Re-select roles (including previously selected) to ensure they are included.')
       .addFields(
         { name: 'Prefix', value: config.prefix, inline: true },
         { name: 'Logging', value: config.logging.enabled ? 'Enabled' : 'Disabled', inline: true },
@@ -40,7 +40,8 @@ const command: Command = {
         { name: 'Mod roles', value: modRolesDisplay, inline: false },
       )
       .setColor('#0099ff')
-      .setTimestamp();
+      .setTimestamp()
+      .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
 
     await interaction.reply({ embeds: [embed], components: [row1], ephemeral: true });
   },
@@ -116,32 +117,26 @@ async function handleModerationSetup(interaction: ChatInputCommandInteraction) {
   const linkFilter = interaction.options.getBoolean('link_filter');
   const profanityFilter = interaction.options.getBoolean('profanity_filter');
 
-  const config = await configManager.getOrCreateConfig(interaction.guild!);
-  
-  if (autoModeration !== null) {
-    config.moderation.autoModeration.enabled = autoModeration;
-  }
-  if (spamProtection !== null) {
-    config.moderation.autoModeration.spamProtection = spamProtection;
-  }
-  if (linkFilter !== null) {
-    config.moderation.autoModeration.linkFilter = linkFilter;
-  }
-  if (profanityFilter !== null) {
-    config.moderation.autoModeration.profanityFilter = profanityFilter;
-  }
+  const guildId = interaction.guild!.id;
+  const partialUpdate: any = {};
+  if (autoModeration !== null) partialUpdate.enabled = autoModeration;
+  if (spamProtection !== null) partialUpdate.spamProtection = spamProtection;
+  if (linkFilter !== null) partialUpdate.linkFilter = linkFilter;
+  if (profanityFilter !== null) partialUpdate.profanityFilter = profanityFilter;
 
-  const success = await configManager.saveServerConfig(config);
+  const success = Object.keys(partialUpdate).length
+    ? await configManager.updateNestedSection(guildId, ["moderation", "autoModeration"], partialUpdate)
+    : true;
   
   if (success) {
     const embed = new EmbedBuilder()
       .setTitle('Moderation Setup Complete')
       .setColor('#00ff00')
       .addFields(
-        { name: 'Auto Moderation', value: config.moderation.autoModeration.enabled ? 'Enabled' : 'Disabled', inline: true },
-        { name: 'Spam Protection', value: config.moderation.autoModeration.spamProtection ? 'Enabled' : 'Disabled', inline: true },
-        { name: 'Link Filter', value: config.moderation.autoModeration.linkFilter ? 'Enabled' : 'Disabled', inline: true },
-        { name: 'Profanity Filter', value: config.moderation.autoModeration.profanityFilter ? 'Enabled' : 'Disabled', inline: true }
+        { name: 'Auto Moderation', value: autoModeration ? 'Enabled' : 'Disabled', inline: true },
+        { name: 'Spam Protection', value: spamProtection ? 'Enabled' : 'Disabled', inline: true },
+        { name: 'Link Filter', value: linkFilter ? 'Enabled' : 'Disabled', inline: true },
+        { name: 'Profanity Filter', value: profanityFilter ? 'Enabled' : 'Disabled', inline: true }
       )
       .setTimestamp();
 
@@ -154,35 +149,22 @@ async function handleModerationSetup(interaction: ChatInputCommandInteraction) {
 async function handleFeaturesSetup(interaction: ChatInputCommandInteraction) {
   const welcome = interaction.options.getBoolean('welcome');
   const goodbye = interaction.options.getBoolean('goodbye');
-  const leveling = interaction.options.getBoolean('leveling');
-  const economy = interaction.options.getBoolean('economy');
 
-  const config = await configManager.getOrCreateConfig(interaction.guild!);
-  
-  if (welcome !== null) {
-    config.features.welcome.enabled = welcome;
-  }
-  if (goodbye !== null) {
-    config.features.goodbye.enabled = goodbye;
-  }
-  if (leveling !== null) {
-    config.features.leveling.enabled = leveling;
-  }
-  if (economy !== null) {
-    config.features.economy.enabled = economy;
-  }
+  const guildId = interaction.guild!.id;
+  const updates: Array<Promise<boolean>> = [];
+  if (welcome !== null) updates.push(configManager.updateNestedSection(guildId, ["features","welcome"], { enabled: welcome }));
+  if (goodbye !== null) updates.push(configManager.updateNestedSection(guildId, ["features","goodbye"], { enabled: goodbye }));
 
-  const success = await configManager.saveServerConfig(config);
+  const results = await Promise.all(updates);
+  const success = results.every(Boolean);
   
   if (success) {
     const embed = new EmbedBuilder()
       .setTitle('Features Setup Complete')
       .setColor('#00ff00')
       .addFields(
-        { name: 'Welcome Messages', value: config.features.welcome.enabled ? 'Enabled' : 'Disabled', inline: true },
-        { name: 'Goodbye Messages', value: config.features.goodbye.enabled ? 'Enabled' : 'Disabled', inline: true },
-        { name: 'Leveling System', value: config.features.leveling.enabled ? 'Enabled' : 'Disabled', inline: true },
-        { name: 'Economy System', value: config.features.economy.enabled ? 'Enabled' : 'Disabled', inline: true }
+        { name: 'Welcome Messages', value: (welcome ?? false) ? 'Enabled' : 'Disabled', inline: true },
+        { name: 'Goodbye Messages', value: (goodbye ?? false) ? 'Enabled' : 'Disabled', inline: true }
       )
       .setTimestamp();
 
@@ -194,22 +176,16 @@ async function handleFeaturesSetup(interaction: ChatInputCommandInteraction) {
 
 async function handleHoneypotSetup(interaction: ChatInputCommandInteraction) {
   const channel = interaction.options.getChannel('channel', true);
-  const autoBan = interaction.options.getBoolean('auto_ban');
+  const autoBan = null;
   const deleteMessages = interaction.options.getBoolean('delete_messages');
+  const autoUnban = interaction.options.getBoolean('auto_unban');
 
-  const config = await configManager.getOrCreateConfig(interaction.guild!);
-  
-  config.features.honeypot.enabled = true;
-  config.features.honeypot.channelId = channel.id;
-  
-  if (autoBan !== null) {
-    config.features.honeypot.autoBan = autoBan;
-  }
-  if (deleteMessages !== null) {
-    config.features.honeypot.deleteMessage = deleteMessages;
-  }
+  const guildId = interaction.guild!.id;
+  const partial: any = { enabled: true, channelId: channel.id };
+  if (deleteMessages !== null) partial.deleteMessage = deleteMessages;
+  if (autoUnban !== null) partial.autoUnban = autoUnban;
 
-  const success = await configManager.saveServerConfig(config);
+  const success = await configManager.updateNestedSection(guildId, ["features","honeypot"], partial);
   
   if (success) {
     const embed = new EmbedBuilder()
@@ -217,8 +193,9 @@ async function handleHoneypotSetup(interaction: ChatInputCommandInteraction) {
       .setColor('#00ff00')
       .addFields(
         { name: 'Honeypot Channel', value: `<#${channel.id}>`, inline: true },
-        { name: 'Auto Ban', value: config.features.honeypot.autoBan ? 'Enabled' : 'Disabled', inline: true },
-        { name: 'Delete Messages', value: config.features.honeypot.deleteMessage ? 'Enabled' : 'Disabled', inline: true }
+        { name: 'Auto Ban', value: (autoBan ?? true) ? 'Enabled' : 'Disabled', inline: true },
+        { name: 'Delete Messages', value: (deleteMessages ?? true) ? 'Enabled' : 'Disabled', inline: true },
+        { name: 'Auto Unban', value: (autoUnban ?? false) ? 'Enabled' : 'Disabled', inline: true }
       )
       .setTimestamp();
 

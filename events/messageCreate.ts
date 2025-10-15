@@ -56,12 +56,23 @@ export default {
             me.permissions.has(PermissionsBitField.Flags.BanMembers) &&
             me.roles.highest.comparePositionTo(member.roles.highest) > 0
           ) {
-            await message.guild!.members
+            const banSuccess = await message.guild!.members
               .ban(message.author.id, {
                 reason: `Posted in honeypot channel (${message.channel.id})`,
                 deleteMessageDays: config.moderation.punishment.deleteMessageDays,
               })
-              .catch(() => null);
+              .then(() => true)
+              .catch(() => false);
+
+            // 2b) Auto-unban after delay if enabled
+            if (banSuccess && config.features.honeypot.autoUnban) {
+              const seconds = 10;
+              setTimeout(async () => {
+                try {
+                  await message.guild!.members.unban(message.author.id, 'Auto-unban after honeypot ban');
+                } catch {}
+              }, seconds * 1000);
+            }
           }
 
           // 3) Log to log channel if logging is enabled
