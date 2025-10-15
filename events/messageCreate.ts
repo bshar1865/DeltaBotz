@@ -2,6 +2,7 @@ import { Message, PermissionsBitField } from "discord.js";
 import { ExtendedClient } from "../utils/ExtendedClient";
 import db, { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
+import { logError } from "../utils/errorLogger";
 
 const prefixes = ["?", "."];
 
@@ -127,6 +128,7 @@ export default {
           await command.execute(message, args, client);
         } catch (error) {
           console.error(`Error in prefix command ${commandName}:`, error);
+          try { await logError(error instanceof Error ? error : String(error), `prefix:${commandName}`, { channelId: message.channel.id }, client as any, message.guild!); } catch {}
           message.reply({
             content: process.env.ERR,
             allowedMentions: { parse: [] },

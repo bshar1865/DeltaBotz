@@ -15,6 +15,7 @@ export default {
           await command.execute(interaction, client);
         } catch (err) {
           console.error(`Error in slash command ${interaction.commandName}:`, err);
+          try { await logError(err instanceof Error ? err : String(err), `slash:${interaction.commandName}`, undefined, client as any, (interaction as any).guild); } catch {}
 
           if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
             await interaction.reply({
