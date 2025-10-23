@@ -34,8 +34,14 @@ export async function logErrorToChannel(options: ErrorLogOptions, client?: any, 
 
         const logChannel = await client.channels.fetch(idclass.channelErrorLogs());
         
-        if (!logChannel || !(logChannel instanceof TextChannel || logChannel instanceof DMChannel || logChannel instanceof NewsChannel)) {
-            throw new Error('Invalid log channel');
+        if (!logChannel) {
+            console.error('Failed to fetch log channel - channel not found');
+            return;
+        }
+        
+        if (!(logChannel instanceof TextChannel || logChannel instanceof DMChannel || logChannel instanceof NewsChannel)) {
+            console.error('Invalid log channel type:', logChannel.constructor.name);
+            return;
         }
 
         const serverName = guild?.name || 'Unknown Server';
@@ -59,6 +65,8 @@ export async function logErrorToChannel(options: ErrorLogOptions, client?: any, 
     } catch (err) {
         console.error('Failed to log error to channel:', err);
         console.error('Original error:', error);
+        console.error('Channel ID attempted:', idclass.channelErrorLogs());
+        console.error('Client ready state:', client?.isReady());
     }
 }
 
@@ -66,3 +74,4 @@ export async function logErrorToChannel(options: ErrorLogOptions, client?: any, 
 export const logError = (error: Error | string, source?: string, additionalInfo?: Record<string, any>, client?: any, guild?: Guild) => {
     return logErrorToChannel({ error, source, additionalInfo }, client, guild);
 };
+

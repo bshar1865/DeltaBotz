@@ -1,10 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction, version as discordJsVersion } from 'discord.js';
 import os from 'os';
 
-// Simplified info: no git repo or host device details
-
-// CPU usage removed per request
-
 function formatBytes(bytes: number): string {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     if (bytes === 0) return '0 Byte';
@@ -42,7 +38,6 @@ export default {
         const freeMem = os.freemem();
         const usedMem = totalMem - freeMem;
         const memoryUsage = `${formatBytes(usedMem)} / ${formatBytes(totalMem)}`;
-        // CPU usage removed; keep memory stats
         
         const mainEmbed = new EmbedBuilder()
             .setTitle('DeltaBotz')

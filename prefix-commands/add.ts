@@ -39,8 +39,7 @@ export default {
         if (message.channel.type !== ChannelType.GuildText) return;
 
         const channel = message.channel as TextChannel;
-        const config = guildConfig;
-        const restrictedCategories: string[] = []; // removed idclass restriction; keep empty or replace with config.channels
+        const restrictedCategories: string[] = [];
         const isRestricted = restrictedCategories.includes(channel.parentId ?? '');
 
         if (isRestricted) {
@@ -62,7 +61,7 @@ export default {
                 allowedMentions: { parse: [] }
             });
 
-            const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '');
+            const logChannel = message.guild.channels.cache.get(guildConfig.logging.logChannelId || '');
             if (logChannel?.type === ChannelType.GuildText) {
                 await (logChannel as TextChannel).send({
                     content: `<@${user.id}> has been __**ADDED**__ to ${channel.name} by <@${message.author.id}>.`,

@@ -17,11 +17,11 @@ export default {
     }
 
     const input = message.content.trim();
-const matches = input.match(/[\.\?](\w+)/g); // Matches both .cmd and ?cmd
+    const matches = input.match(/[\.\?](\w+)/g);
 
-if (matches && matches.length > 1 && matches[0] === matches[1]) {
-  return message.reply("You can't run the same command inside itself.");
-}
+    if (matches && matches.length > 1 && matches[0] === matches[1]) {
+      return message.reply("You can't run the same command inside itself.");
+    }
 
     let channel = message.mentions.channels.first() as TextChannel | null;
     let text: string;

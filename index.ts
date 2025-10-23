@@ -154,12 +154,16 @@ async function init() {
 
 process.on('unhandledRejection', async (error: any) => {
     console.error('Unhandled promise rejection:', error);
-    try { await logError(error instanceof Error ? error : String(error), 'unhandledRejection', undefined, client as any); } catch {}
+    try { await logError(error instanceof Error ? error : String(error), 'unhandledRejection', undefined, client as any); } catch (logErr) {
+        console.error('Failed to log unhandled rejection:', logErr);
+    }
 });
 
 process.on('uncaughtException', async (error: any) => {
     console.error('Uncaught exception:', error);
-    try { await logError(error instanceof Error ? error : String(error), 'uncaughtException', undefined, client as any); } catch {}
+    try { await logError(error instanceof Error ? error : String(error), 'uncaughtException', undefined, client as any); } catch (logErr) {
+        console.error('Failed to log uncaught exception:', logErr);
+    }
     process.exit(1);
 });
 

@@ -13,7 +13,6 @@ export default {
     console.log(`Logged in as ${client.user!.tag}`);
     console.log(`Startup time: ${startupTime}s`);
 
-
     const logChannel = await client.channels.fetch(idclass.channelErrorLogs()).catch(() => null);
     if (
       logChannel &&
@@ -24,9 +23,8 @@ export default {
       await logChannel.send(
         `${client.user!.tag} has been logged in successfully\nStartup Time: \`${startupTime}s\``
       );
+    } else {
+      console.error('Failed to fetch error log channel on startup');
     }
-
-
-    
   }
 };

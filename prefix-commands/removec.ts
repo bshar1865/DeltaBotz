@@ -27,7 +27,6 @@ export default {
     const channel = message.channel;
     if (!channel.isTextBased() || channel.type !== 0) return;
 
-    // use existing config variable below
     const restrictedCategories: string[] = []; 
 
     const isRestricted = restrictedCategories.includes(channel.parentId || '');

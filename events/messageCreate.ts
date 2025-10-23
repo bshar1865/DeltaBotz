@@ -4,7 +4,7 @@ import db, { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
 import { logError } from "../utils/errorLogger";
 
-const prefixes = ["?", "."];
+const defaultPrefix = ".";
 
 export default {
   name: "messageCreate",
@@ -102,11 +102,32 @@ export default {
     // --- Prefix command logic ---
     if (message.inGuild()) {
       const config = await configManager.getOrCreateConfig(message.guild);
-      const serverPrefixes = [config.prefix, ...prefixes];
-      const prefix = serverPrefixes.find((p) => message.content.startsWith(p));
-      if (!prefix) return;
+      
+      // Handle prefix change requests
+      if (message.content.toLowerCase().startsWith('setprefix') && message.member?.permissions.has('Administrator')) {
+        const newPrefix = message.content.split(' ')[1];
+        if (newPrefix && newPrefix.length <= 5 && newPrefix.length >= 1) {
+          config.prefix = newPrefix;
+          await configManager.saveServerConfig(config);
+          await message.reply({
+            content: `Prefix changed to \`${newPrefix}\``,
+            allowedMentions: { parse: [] }
+          });
+          return;
+        } else {
+          await message.reply({
+            content: 'Invalid prefix. Please use 1-5 characters.',
+            allowedMentions: { parse: [] }
+          });
+          return;
+        }
+      }
+      
+      // Only use the server-specific prefix, no fallbacks
+      const serverPrefix = config.prefix || defaultPrefix;
+      if (!message.content.startsWith(serverPrefix)) return;
 
-      const args = message.content.slice(prefix.length).trim().split(/ +/);
+      const args = message.content.slice(serverPrefix.length).trim().split(/ +/);
       const commandName = args.shift()!.toLowerCase();
       const command = client.prefixCommands.get(commandName);
 

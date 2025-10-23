@@ -10,16 +10,18 @@ const command: Command = {
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
-      await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
+      await interaction.reply({ content: 'This command can only be used in a server!', flags: 64 });
       return;
     }
 
-    const config = await configManager.getOrCreateConfig(interaction.guild);
+    try {
+      const config = await configManager.getOrCreateConfig(interaction.guild);
 
     const viewMenu = new StringSelectMenuBuilder()
       .setCustomId('setup_menu')
       .setPlaceholder('Select a section to view')
       .addOptions(
+        new StringSelectMenuOptionBuilder().setLabel('Prefix').setValue('prefix').setDescription('Set custom bot prefix'),
         new StringSelectMenuOptionBuilder().setLabel('Mod roles').setValue('roles').setDescription('View moderator roles'),
         new StringSelectMenuOptionBuilder().setLabel('Logging').setValue('logging').setDescription('View logging settings'),
         new StringSelectMenuOptionBuilder().setLabel('Honeypot').setValue('honeypot').setDescription('View honeypot settings'),
@@ -34,7 +36,7 @@ const command: Command = {
       .setTitle('Setup')
       .setDescription('Use the menus below to configure the bot. Changes save instantly when you select.\nNote: Re-select roles (including previously selected) to ensure they are included.')
       .addFields(
-        { name: 'Prefix', value: config.prefix, inline: true },
+        { name: 'Prefix', value: `\`${config.prefix}\``, inline: true },
         { name: 'Logging', value: config.logging.enabled ? 'Enabled' : 'Disabled', inline: true },
         { name: 'Honeypot', value: config.features.honeypot.enabled ? 'Enabled' : 'Disabled', inline: true },
         { name: 'Mod roles', value: modRolesDisplay, inline: false },
@@ -43,7 +45,18 @@ const command: Command = {
       .setTimestamp()
       .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
 
-    await interaction.reply({ embeds: [embed], components: [row1], ephemeral: true });
+      await interaction.reply({ embeds: [embed], components: [row1], flags: 64 });
+    } catch (error) {
+      console.error('Error in setup command:', error);
+      try {
+        await interaction.reply({ 
+          content: 'Failed to load server configuration. Please try again later.', 
+          flags: 64 
+        });
+      } catch (replyError) {
+        console.error('Failed to send error reply:', replyError);
+      }
+    }
   },
 };
 
@@ -79,7 +92,7 @@ async function handleLoggingSetup(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } else {
-    await interaction.reply({ content: 'Failed to update logging configuration.', ephemeral: true });
+    await interaction.reply({ content: 'Failed to update logging configuration.', flags: 64 });
   }
 }
 
@@ -107,7 +120,7 @@ async function handleRolesSetup(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } else {
-    await interaction.reply({ content: 'Failed to update role configuration.', ephemeral: true });
+    await interaction.reply({ content: 'Failed to update role configuration.', flags: 64 });
   }
 }
 
@@ -142,7 +155,7 @@ async function handleModerationSetup(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } else {
-    await interaction.reply({ content: 'Failed to update moderation configuration.', ephemeral: true });
+    await interaction.reply({ content: 'Failed to update moderation configuration.', flags: 64 });
   }
 }
 
@@ -170,7 +183,7 @@ async function handleFeaturesSetup(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } else {
-    await interaction.reply({ content: 'Failed to update features configuration.', ephemeral: true });
+    await interaction.reply({ content: 'Failed to update features configuration.', flags: 64 });
   }
 }
 
@@ -201,7 +214,7 @@ async function handleHoneypotSetup(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } else {
-    await interaction.reply({ content: 'Failed to update honeypot configuration.', ephemeral: true });
+    await interaction.reply({ content: 'Failed to update honeypot configuration.', flags: 64 });
   }
 }
 
@@ -224,7 +237,7 @@ async function handleShowSetup(interaction: ChatInputCommandInteraction) {
     .setColor('#0099ff')
     .setTimestamp();
 
-  await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+  await interaction.reply({ embeds: [embed], components: [row], flags: 64 });
 }
 
 async function handleCompleteSetup(interaction: ChatInputCommandInteraction) {

@@ -281,7 +281,7 @@ export class ConfigManager {
     // Ensure required fields
     if (!validated.guildId) throw new Error('Guild ID is required');
     if (!validated.guildName) validated.guildName = 'Unknown Server';
-    if (!validated.prefix) validated.prefix = '?';
+    if (!validated.prefix) validated.prefix = '.';
     if (!validated.createdAt) validated.createdAt = new Date().toISOString();
     if (!validated.updatedAt) validated.updatedAt = new Date().toISOString();
 
