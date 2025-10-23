@@ -8,7 +8,7 @@ const event: Event = {
     try {
       const logChannel = await client.channels.fetch(idclass.channelErrorLogs()).catch(() => null);
       if (logChannel && (logChannel instanceof TextChannel || logChannel instanceof DMChannel || logChannel instanceof NewsChannel)) {
-        await logChannel.send(`✅ Added to server: **${guild.name}** (${guild.id})`);
+        await logChannel.send(`Added to server: **${guild.name}** (${guild.id})`);
       }
     } catch (err) {
       console.error('Failed to log guild add:', err);

@@ -35,7 +35,7 @@ import configManager from '../utils/ConfigManager';
         const bannedUser = bannedUsers?.get(userId);
   
         if (!bannedUser) {
-          return message.reply({ content: 'lil bro is likely unbanned.' });
+          return message.reply({ content: 'user is likely unbanned.' });
         }
   
         await message.guild?.members.unban(userId, reason);

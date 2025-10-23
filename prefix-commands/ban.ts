@@ -48,7 +48,7 @@ export default {
       const bans = await message.guild?.bans.fetch();
       if (bans?.has(userId)) {
         return message.reply({
-          content: 'This lil bro is already banned.',
+          content: 'This user is already banned.',
           allowedMentions: { parse: [] }
         });
       }
@@ -94,12 +94,7 @@ export default {
       }
 
       await message.reply({
-        content: `https://tenor.com/view/persona-3-reload-episode-aigis-persona-persona-3-persona-3-reload-joker-persona-3-reload-joker-fight-gif-12722693221088524996`,
-        allowedMentions: { parse: [] }
-      });
-
-      await message.reply({
-        content: `<@${userId}> has been __**BANNED**__.`,
+        content: `<@${userId}> has been __**BANNED**__.[⠀](https://tenor.com/view/persona-3-reload-episode-aigis-persona-persona-3-persona-3-reload-joker-persona-3-reload-joker-fight-gif-12722693221088524996)`,
         allowedMentions: { parse: [] }
       });
 
@@ -115,7 +110,7 @@ export default {
     } catch (error) {
       console.error(error);
       message.reply({
-        content: 'I was unable to ban lil bro. Please check if the ID is correct or if lil bro is already banned.',
+        content: 'I was unable to ban user. Please check if the ID is correct or if user is already banned.',
         allowedMentions: { parse: [] }
       });
     }

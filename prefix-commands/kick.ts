@@ -69,11 +69,7 @@ module.exports = {
 
             await user.kick(reason);
             await message.channel.send({
-                content: `https://tenor.com/view/kicked-persona-persona5-gif-25017260`,
-                allowedMentions: { parse: [] }
-            });
-            await message.channel.send({
-                content: `<@${userId}> has been __**KICKED**__.`,
+                content: `<@${userId}> has been __**KICKED**__.[⠀](https://tenor.com/view/kicked-persona-persona5-gif-25017260)`,
                 allowedMentions: { parse: [] }
             });
 

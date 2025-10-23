@@ -90,7 +90,7 @@ import configManager from '../utils/ConfigManager';
       } catch (err) {
         console.error(err);
         message.reply({
-          content: 'I was unable to softban lil bro. Please check if the ID is correct.',
+          content: 'I was unable to softban user. Please check if the ID is correct.',
           allowedMentions: { parse: [] }
         });
       }

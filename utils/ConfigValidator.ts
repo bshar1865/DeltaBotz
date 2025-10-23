@@ -107,11 +107,11 @@ export class ConfigValidator {
     }
 
     // Validate honeypot configuration
-    if (config.moderation.honeypot.enabled) {
-      if (!config.moderation.honeypot.channelId) {
+    if (config.features.honeypot.enabled) {
+      if (!config.features.honeypot.channelId) {
         errors.push('Honeypot is enabled but no channel is set');
       } else {
-        const channel = guild.channels.cache.get(config.moderation.honeypot.channelId);
+        const channel = guild.channels.cache.get(config.features.honeypot.channelId);
         if (!channel) {
           errors.push('Honeypot channel does not exist');
         } else if (channel.type !== ChannelType.GuildText) {
@@ -158,26 +158,9 @@ export class ConfigValidator {
       }
     }
 
-    if (config.features.leveling.enabled) {
-      if (config.features.leveling.xpPerMessage < 0) {
-        errors.push('XP per message cannot be negative');
-      }
-      if (config.features.leveling.xpCooldown < 0) {
-        errors.push('XP cooldown cannot be negative');
-      }
-    }
+    
 
-    if (config.features.economy.enabled) {
-      if (config.features.economy.dailyAmount < 0) {
-        errors.push('Daily amount cannot be negative');
-      }
-      if (config.features.economy.workAmount < 0) {
-        errors.push('Work amount cannot be negative');
-      }
-      if (!config.features.economy.currencyName || config.features.economy.currencyName.length === 0) {
-        errors.push('Currency name is required when economy is enabled');
-      }
-    }
+    
 
     // Validate moderation settings
     if (config.moderation.punishment.warnThreshold < 0) {
@@ -258,18 +241,7 @@ export class ConfigValidator {
     fixed.features.autoRole.roleIds = fixed.features.autoRole.roleIds.filter(id => validRoles.has(id));
 
     // Fix numeric values
-    if (fixed.features.leveling.xpPerMessage < 0) {
-      fixed.features.leveling.xpPerMessage = 10;
-    }
-    if (fixed.features.leveling.xpCooldown < 0) {
-      fixed.features.leveling.xpCooldown = 60000;
-    }
-    if (fixed.features.economy.dailyAmount < 0) {
-      fixed.features.economy.dailyAmount = 100;
-    }
-    if (fixed.features.economy.workAmount < 0) {
-      fixed.features.economy.workAmount = 50;
-    }
+    
     if (fixed.moderation.punishment.warnThreshold < 0) {
       fixed.moderation.punishment.warnThreshold = 3;
     }
@@ -314,11 +286,10 @@ export class ConfigValidator {
     if (config.features.welcome.enabled && !config.features.welcome.channelId) score -= 5;
     if (config.features.goodbye.enabled && !config.features.goodbye.channelId) score -= 5;
     if (config.features.autoRole.enabled && config.features.autoRole.roleIds.length === 0) score -= 5;
-    if (config.features.leveling.enabled && config.features.leveling.xpPerMessage <= 0) score -= 5;
 
     // Moderation configuration (20 points)
     totalChecks += 4;
-    if (config.moderation.honeypot.enabled && !config.moderation.honeypot.channelId) score -= 5;
+    if (config.features.honeypot.enabled && !config.features.honeypot.channelId) score -= 5;
     if (config.moderation.autoModeration.enabled && !config.moderation.autoModeration.spamProtection) score -= 5;
     if (config.moderation.punishment.warnThreshold <= 0) score -= 5;
     if (config.moderation.punishment.banThreshold <= 0) score -= 5;
