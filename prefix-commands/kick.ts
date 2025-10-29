@@ -43,8 +43,8 @@ module.exports = {
 
             if (user.roles.cache.some((r: any) => requiredRoles.includes(r.id))) {
                 const embed = new EmbedBuilder()
-                    .setColor('#FFA500')
-                    .setDescription('You cannot kick peak mods. <:DogHush:1331679185072029798>');
+                    .setColor('Random')
+                    .setDescription('You cannot kick mods. <a:AK_KannaPiano:1370142206739877959>');
                 return message.reply({ embeds: [embed] });
             }
 

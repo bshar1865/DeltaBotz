@@ -41,8 +41,8 @@ import configManager from '../utils/ConfigManager';
 
   
         const DevEmbed = new EmbedBuilder()
-          .setColor('#FFA500')
-          .setDescription('You cannot softban peak mods. <:DogHush:1331679185072029798>');
+          .setColor('Random')
+          .setDescription('You cannot softban mods. <a:AK_KannaPiano:1370142206739877959> ');
 
         if (user.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id))) {
     return message.reply({ embeds: [DevEmbed] });

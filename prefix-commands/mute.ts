@@ -29,8 +29,8 @@ import configManager from '../utils/ConfigManager';
       const protectedRoles = requiredRoles;
       if (member.roles.cache.some(role => protectedRoles.includes(role.id))) {
         const embed = new EmbedBuilder()
-          .setColor('#FFA500')
-          .setDescription('You cannot mute peak mods <:DogHush:1331679185072029798>');
+          .setColor('Random')
+          .setDescription('You cannot mute mods <a:AK_KannaPiano:1370142206739877959> ');
         return message.reply({ embeds: [embed] });
       }
   

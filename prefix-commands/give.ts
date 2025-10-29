@@ -69,7 +69,7 @@ module.exports = {
                 }
             } else {
                 await message.reply({
-                    content: '⚠️ No valid roles to add.',
+                    content: 'No valid roles to add.',
                     allowedMentions: { parse: [] }
                 });
             }
