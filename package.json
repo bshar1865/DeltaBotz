@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^12.4.1",
-    "discord.js": "^14.23.2",
+    "discord.js": "^14.24.2",
     "dotenv": "^17.2.3",
     "quick.db": "^9.1.7"
   }

@@ -6,6 +6,17 @@ import { logError } from "../utils/errorLogger";
 
 const defaultPrefix = ".";
 
+// Utility to split a string into 1024-character chunks
+function splitMessage(str: string, maxLength = 1024): string[] {
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < str.length) {
+    chunks.push(str.slice(start, start + maxLength));
+    start += maxLength;
+  }
+  return chunks;
+}
+
 export default {
   name: "messageCreate",
   once: false,
@@ -13,37 +24,30 @@ export default {
     // --- Honeypot logic ---
     if (message.inGuild() && !message.author.bot && !message.system) {
       const guildId = message.guildId!;
-
-      // Get server configuration
       const config = await configManager.getOrCreateConfig(message.guild!);
-
-      // Use config values with fallback to database and idclass defaults
       const gdb = getGuildDB(guildId);
-      const honeypotChannelId = 
-        config.features.honeypot.channelId || 
+
+      const honeypotChannelId =
+        config.features.honeypot.channelId ||
         (await gdb.get<string>(`honeypot_${guildId}`)) || '';
-      const logChannelId = 
-        config.logging.logChannelId || 
+      const logChannelId =
+        config.logging.logChannelId ||
         (await gdb.get<string>(`log_${guildId}`)) || '';
-      const deleteMessage = 
-        config.features.honeypot.deleteMessage ?? 
-        (await gdb.get<boolean>(`deleteMessage_${guildId}`)) ?? 
+      const deleteMessage =
+        config.features.honeypot.deleteMessage ??
+        (await gdb.get<boolean>(`deleteMessage_${guildId}`)) ??
         true;
 
       if (honeypotChannelId && message.channel.id === honeypotChannelId && config.features.honeypot.enabled) {
         const member = message.member;
         if (member) {
-          // Check if user has permission to bypass honeypot
           const allModRoles = config.permissions.moderatorRoles;
-          
-          if (member.roles.cache.some((r) => allModRoles.includes(r.id))) {
-            return;
-          }
+          if (member.roles.cache.some((r) => allModRoles.includes(r.id))) return;
 
           const me = message.guild!.members.me!;
           const snapshot = message.content ?? "";
 
-          // 1) Delete message if enabled
+          // Delete message
           if (
             deleteMessage &&
             me.permissionsIn(message.channel).has(PermissionsBitField.Flags.ManageMessages)
@@ -51,7 +55,7 @@ export default {
             await message.delete().catch(() => null);
           }
 
-          // 2) Ban user if possible and enabled
+          // Ban user
           if (
             config.features.honeypot.autoBan &&
             me.permissions.has(PermissionsBitField.Flags.BanMembers) &&
@@ -65,30 +69,34 @@ export default {
               .then(() => true)
               .catch(() => false);
 
-            // 2b) Auto-unban after delay if enabled
             if (banSuccess && config.features.honeypot.autoUnban) {
-              const seconds = 10;
               setTimeout(async () => {
                 try {
                   await message.guild!.members.unban(message.author.id, 'Auto-unban after honeypot ban');
                 } catch {}
-              }, seconds * 1000);
+              }, 10 * 1000);
             }
           }
 
-          // 3) Log to log channel if logging is enabled
+          // Log to log channel
           if (logChannelId && config.logging.enabled) {
             const logChannel = await message.guild!.channels.fetch(logChannelId).catch(() => null);
             if (logChannel?.isTextBased()) {
+              const messageChunks = splitMessage(snapshot || "—");
+              const embedFields: any[] = [{ name: "User ID", value: message.author.id }];
+              messageChunks.forEach((chunk, i) => {
+                embedFields.push({
+                  name: i === 0 ? "Message" : `Message (part ${i})`,
+                  value: chunk
+                });
+              });
+
               await logChannel.send({
                 embeds: [
                   {
-                    title: "🚨 Honeypot Triggered",
+                    title: "Honeypot Triggered.",
                     description: `User **${message.author.tag}** posted in honeypot <#${honeypotChannelId}>`,
-                    fields: [
-                      { name: "User ID", value: message.author.id },
-                      { name: "Message", value: snapshot || "—" },
-                    ],
+                    fields: embedFields,
                     timestamp: new Date().toISOString(),
                   },
                 ],
@@ -102,8 +110,6 @@ export default {
     // --- Prefix command logic ---
     if (message.inGuild()) {
       const config = await configManager.getOrCreateConfig(message.guild);
-      
-      // Handle prefix change requests
       if (message.content.toLowerCase().startsWith('setprefix') && message.member?.permissions.has('Administrator')) {
         const newPrefix = message.content.split(' ')[1];
         if (newPrefix && newPrefix.length <= 5 && newPrefix.length >= 1) {
@@ -122,8 +128,6 @@ export default {
           return;
         }
       }
-      
-      // Only use the server-specific prefix, no fallbacks
       const serverPrefix = config.prefix || defaultPrefix;
       if (!message.content.startsWith(serverPrefix)) return;
 
@@ -132,9 +136,7 @@ export default {
       const command = client.prefixCommands.get(commandName);
 
       if (command) {
-        // Check permissions using config
         const allModRoles = config.permissions.moderatorRoles;
-        
         if (
           message.author.id !== config.permissions.ownerId &&
           !message.member?.roles.cache.some((r) => allModRoles.includes(r.id))
@@ -149,7 +151,15 @@ export default {
           await command.execute(message, args, client);
         } catch (error) {
           console.error(`Error in prefix command ${commandName}:`, error);
-          try { await logError(error instanceof Error ? error : String(error), `prefix:${commandName}`, { channelId: message.channel.id }, client as any, message.guild!); } catch {}
+          try {
+            await logError(
+              error instanceof Error ? error : String(error),
+              `prefix:${commandName}`,
+              { channelId: message.channel.id, guildId: message.guild?.id },
+              client as any,
+              message.guild ?? undefined
+            );
+          } catch {}
           message.reply({
             content: process.env.ERR,
             allowedMentions: { parse: [] },

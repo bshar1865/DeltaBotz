@@ -23,7 +23,11 @@ function formatAdditionalInfo(info?: Record<string, any>): string {
     }
 }
 
-export async function logErrorToChannel(options: ErrorLogOptions, client?: any, guild?: Guild): Promise<void> {
+         export async function logErrorToChannel(
+         options: ErrorLogOptions,
+         client?: any,
+         guild?: Guild
+        ): Promise<void> {
     const { error, source = 'Unknown', additionalInfo } = options;
 
     try {
@@ -33,19 +37,28 @@ export async function logErrorToChannel(options: ErrorLogOptions, client?: any, 
         }
 
         const logChannel = await client.channels.fetch(idclass.channelErrorLogs());
-        
         if (!logChannel) {
             console.error('Failed to fetch log channel - channel not found');
             return;
         }
-        
         if (!(logChannel instanceof TextChannel || logChannel instanceof DMChannel || logChannel instanceof NewsChannel)) {
             console.error('Invalid log channel type:', logChannel.constructor.name);
             return;
         }
 
-        const serverName = guild?.name || 'Unknown Server';
-        const serverId = guild?.id || 'unknown';
+        // Robust guild detection
+        let serverName = 'Unknown Server';
+        let serverId = 'unknown';
+        if (guild) {
+            serverName = guild.name;
+            serverId = guild.id;
+        } else if (additionalInfo?.guildId) {
+            const fetchedGuild = await client.guilds.fetch(additionalInfo.guildId).catch(() => null);
+            if (fetchedGuild) {
+                serverName = fetchedGuild.name;
+                serverId = fetchedGuild.id;
+            }
+        }
         const errorMessage = [
             `**Error in:** \`${source}\``,
             `**Server:** ${serverName} (${serverId})`,
@@ -70,8 +83,11 @@ export async function logErrorToChannel(options: ErrorLogOptions, client?: any, 
     }
 }
 
-// Export a convenient function for direct use
-export const logError = (error: Error | string, source?: string, additionalInfo?: Record<string, any>, client?: any, guild?: Guild) => {
-    return logErrorToChannel({ error, source, additionalInfo }, client, guild);
-};
-
+// Convenience wrapper
+export const logError = (
+    error: Error | string,
+    source?: string,
+    additionalInfo?: Record<string, any>,
+    client?: any,
+    guild?: Guild
+) => logErrorToChannel({ error, source, additionalInfo }, client, guild);

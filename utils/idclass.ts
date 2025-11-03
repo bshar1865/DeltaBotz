@@ -4,7 +4,7 @@ class IDClass {
   }
 
   channelErrorLogs() {
-    return "1421556360029405274";
+    return "1434715244378329208";
   }
 }
 
