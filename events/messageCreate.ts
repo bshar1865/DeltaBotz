@@ -133,6 +133,22 @@ export default {
 
       const args = message.content.slice(serverPrefix.length).trim().split(/ +/);
       const commandName = args.shift()!.toLowerCase();
+      
+      // Check for temp commands first
+      const gdb = getGuildDB(message.guild.id);
+      const tempCommands = await gdb.get<Array<{ name: string; response: string }>>('tempCommands') || [];
+      const tempCommand = tempCommands.find(c => c.name.toLowerCase() === commandName);
+      
+      if (tempCommand) {
+        // Execute temp command - no permission check needed, anyone can use temp commands
+        if (message.channel.isTextBased()) {
+          return message.channel.send({
+            content: tempCommand.response,
+            allowedMentions: { parse: [] }
+          });
+        }
+      }
+
       const command = client.prefixCommands.get(commandName);
 
       if (command) {
