@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "better-sqlite3": "^12.4.1",
-    "discord.js": "^14.24.2",
+    "better-sqlite3": "^12.4.6",
+    "discord.js": "^14.25.1",
     "dotenv": "^17.2.3",
     "quick.db": "^9.1.7"
   }
