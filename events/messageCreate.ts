@@ -3,6 +3,7 @@ import { ExtendedClient } from "../utils/ExtendedClient";
 import db, { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
 import { logError } from "../utils/errorLogger";
+import { getEmbeddableUrl } from "../prefix-commands/embed";
 
 const defaultPrefix = ".";
 
@@ -110,6 +111,45 @@ export default {
     // --- Prefix command logic ---
     if (message.inGuild()) {
       const config = await configManager.getOrCreateConfig(message.guild);
+      const serverPrefix = config.prefix || defaultPrefix;
+      
+      // --- Auto-detect embeddable links (only if not a command) ---
+      if (!message.author.bot && !message.system && !message.content.startsWith(serverPrefix)) {
+        // Check for Instagram URLs
+        const instagramUrlPattern = /https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[A-Za-z0-9_-]+/gi;
+        const instagramUrls = message.content.match(instagramUrlPattern);
+        
+        // Future: Add other platform patterns here
+        // const pinterestUrlPattern = /https?:\/\/[^ ]*pinterest\.com\/[^ ]+/gi;
+        // const pinterestUrls = message.content.match(pinterestUrlPattern);
+        
+        if (instagramUrls && instagramUrls.length > 0) {
+          // Process each Instagram URL found
+          for (const url of instagramUrls) {
+            try {
+              const embeddableUrl = await getEmbeddableUrl(url);
+              
+              if (embeddableUrl) {
+                await message.reply({
+                  content: `here is embed:\n${embeddableUrl}`,
+                  allowedMentions: { parse: [] }
+                });
+              } else {
+                await message.reply({
+                  content: "I cannot embed this :(",
+                  allowedMentions: { parse: [] }
+                });
+              }
+            } catch (error: any) {
+              // Silently fail
+            }
+          }
+          return; // Don't process as command if embeddable URL was detected
+        }
+        
+        // Future: Process other platforms here
+      }
+      
       if (message.content.toLowerCase().startsWith('setprefix') && message.member?.permissions.has('Administrator')) {
         const newPrefix = message.content.split(' ')[1];
         if (newPrefix && newPrefix.length <= 5 && newPrefix.length >= 1) {
@@ -128,7 +168,7 @@ export default {
           return;
         }
       }
-      const serverPrefix = config.prefix || defaultPrefix;
+      
       if (!message.content.startsWith(serverPrefix)) return;
 
       const args = message.content.slice(serverPrefix.length).trim().split(/ +/);
