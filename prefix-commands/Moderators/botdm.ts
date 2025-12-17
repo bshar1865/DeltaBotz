@@ -1,5 +1,5 @@
 import { Message, Client, User } from 'discord.js';
-import configManager from '../utils/ConfigManager';
+import configManager from '../../utils/ConfigManager';
 export default {
   name: 'botdm',
   requiredRoles: [],

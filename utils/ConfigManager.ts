@@ -110,6 +110,7 @@ export class ConfigManager {
       permissions: {
         ownerId: guild.ownerId || '',
         moderatorRoles: [],
+        moderatorCommandsEnabled: true,
         commandPermissions: {},
       },
       moderation: {
@@ -288,6 +289,9 @@ export class ConfigManager {
     // Ensure nested objects exist
     if (!validated.logging) validated.logging = DEFAULT_CONFIG.logging!;
     if (!validated.permissions) validated.permissions = DEFAULT_CONFIG.permissions!;
+    if (validated.permissions.moderatorCommandsEnabled === undefined) {
+      validated.permissions.moderatorCommandsEnabled = true;
+    }
     if (!validated.moderation) validated.moderation = DEFAULT_CONFIG.moderation!;
     if (!validated.features) validated.features = DEFAULT_CONFIG.features!;
     if (!validated.channels) validated.channels = {};

@@ -56,14 +56,9 @@ export default {
           const roleIds = interaction.values as string[];
           config.permissions.moderatorRoles = roleIds;
           await configManager.saveServerConfig(config);
-          const embed = buildSetupEmbed(config);
-          const rows = interaction.message?.components;
+          const embed = buildRoleEmbed(config);
           try {
-            if (rows) {
-              await interaction.update({ embeds: [embed], components: rows });
-            } else {
-              await interaction.update({ embeds: [embed] });
-            }
+            await interaction.update({ embeds: [embed], components: buildRoleRows(true) });
           } catch (error) {
             console.error('Failed to update role selection:', error);
             if ((error as any).code === 10062) {
@@ -85,7 +80,7 @@ export default {
         if (interaction.customId === 'setup_log_channel') {
           config.logging = { ...(config.logging || {}), logChannelId: channelId };
           await configManager.saveServerConfig(config);
-          const embed = buildSetupEmbed(config);
+          const embed = buildLoggingEmbed(config);
           try {
             await interaction.update({ embeds: [embed], components: buildLoggingRows(true) });
           } catch (error) {
@@ -108,7 +103,7 @@ export default {
             },
           };
           await configManager.saveServerConfig(config);
-          const embed = buildSetupEmbed(config);
+          const embed = buildHoneypotEmbed(config);
           try {
             await interaction.update({ embeds: [embed], components: buildHoneypotRows(true) });
           } catch (error) {
@@ -123,7 +118,7 @@ export default {
         if (interaction.customId === 'setup_welcome_channel') {
           config.features.welcome = { ...(config.features.welcome || {}), channelId };
           await configManager.saveServerConfig(config);
-          const embed = buildSetupEmbed(config);
+          const embed = buildFeaturesEmbed(config);
           try {
             await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
           } catch (error) {
@@ -138,7 +133,7 @@ export default {
         if (interaction.customId === 'setup_goodbye_channel') {
           config.features.goodbye = { ...(config.features.goodbye || {}), channelId };
           await configManager.saveServerConfig(config);
-          const embed = buildSetupEmbed(config);
+          const embed = buildFeaturesEmbed(config);
           try {
             await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
           } catch (error) {
@@ -160,24 +155,87 @@ export default {
         const guild = interaction.guild!;
         const config = await configManager.getOrCreateConfig(guild);
         if (interaction.customId === 'setup_back') {
-          const embed = new EmbedBuilder().setTitle('Setup').setDescription('Select a section to view').setColor('#0099ff').setTimestamp();
+          const embed = buildMainEmbed(config);
           await interaction.update({ embeds: [embed], components: buildMainRows() }).catch(() => {});
           return;
         }
         if (interaction.customId === 'toggle_welcome') {
           config.features.welcome = { ...(config.features.welcome || {}), enabled: !config.features?.welcome?.enabled };
+          await configManager.saveServerConfig(config);
+          const embed = buildFeaturesEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+          } catch (error) {
+            console.error('Failed to update welcome toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
         }
         if (interaction.customId === 'toggle_goodbye') {
           config.features.goodbye = { ...(config.features.goodbye || {}), enabled: !config.features?.goodbye?.enabled };
+          await configManager.saveServerConfig(config);
+          const embed = buildFeaturesEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+          } catch (error) {
+            console.error('Failed to update goodbye toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
         }
         if (interaction.customId === 'toggle_restore') {
           config.features.roleRestore = { ...(config.features.roleRestore || {}), enabled: !config.features?.roleRestore?.enabled };
+          await configManager.saveServerConfig(config);
+          const embed = buildFeaturesEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+          } catch (error) {
+            console.error('Failed to update restore toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
+        }
+        if (interaction.customId === 'toggle_moderator_commands') {
+          config.permissions.moderatorCommandsEnabled = !(config.permissions.moderatorCommandsEnabled ?? true);
+          await configManager.saveServerConfig(config);
+          const embed = buildPermissionsEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildPermissionsRows(true) });
+          } catch (error) {
+            console.error('Failed to update moderator commands toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
         }
         if (interaction.customId === 'toggle_honeypot_autounban') {
           config.features.honeypot = { ...(config.features.honeypot || {}), autoUnban: !config.features?.honeypot?.autoUnban };
+          await configManager.saveServerConfig(config);
+          const embed = buildHoneypotEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildHoneypotRows(true) });
+          } catch (error) {
+            console.error('Failed to update honeypot autounban toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
         }
         if (interaction.customId === 'toggle_honeypot_delete') {
           config.features.honeypot = { ...(config.features.honeypot || {}), deleteMessage: !config.features?.honeypot?.deleteMessage };
+          await configManager.saveServerConfig(config);
+          const embed = buildHoneypotEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildHoneypotRows(true) });
+          } catch (error) {
+            console.error('Failed to update honeypot delete toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
         }
         if (interaction.customId === 'change_prefix') {
           // Create a modal for prefix input
@@ -213,7 +271,7 @@ export default {
         if (interaction.customId === 'reset_prefix') {
           config.prefix = '.';
           await configManager.saveServerConfig(config);
-          const embed = buildSetupEmbed(config);
+          const embed = buildPrefixEmbed(config);
           try {
             await interaction.update({ embeds: [embed], components: buildPrefixRows(true) });
           } catch (error) {
@@ -225,48 +283,6 @@ export default {
             await interaction.followUp({ content: 'Prefix reset but failed to update display. Please refresh.', flags: 64 });
           }
           return;
-        }
-        
-        await configManager.saveServerConfig(config);
-        const embed = buildSetupEmbed(config);
-        
-        try {
-          // Check if interaction is still valid
-          if (interaction.replied || interaction.deferred) {
-            // If already responded, use followUp
-            await interaction.followUp({ 
-              content: 'Settings updated successfully!', 
-              flags: 64
-            });
-          } else {
-            // If not responded yet, use update
-            if (interaction.customId.startsWith('toggle_honeypot')) {
-              await interaction.update({ embeds: [embed], components: buildHoneypotRows(true) });
-            } else if (interaction.customId.startsWith('toggle_')) {
-              await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
-            } else {
-              // Fallback for other button interactions
-              await interaction.update({ embeds: [embed] });
-            }
-          }
-        } catch (error) {
-          console.error('Failed to update button interaction:', error);
-          // Don't try to respond to expired interactions
-          if ((error as any).code === 10062) {
-            console.log('Interaction expired, skipping response');
-            return;
-          }
-          
-          if (!interaction.replied && !interaction.deferred) {
-            try {
-              await interaction.reply({ 
-                content: 'Settings updated but failed to refresh display. Please use /setup again.', 
-                flags: 64
-              });
-            } catch (replyError) {
-              console.error('Failed to send error reply:', replyError);
-            }
-          }
         }
       } else if (interaction.isModalSubmit()) {
         // Handle modal submissions
@@ -285,7 +301,7 @@ export default {
             config.prefix = newPrefix;
             await configManager.saveServerConfig(config);
             
-            const embed = buildSetupEmbed(config);
+            const embed = buildPrefixEmbed(config);
             try {
               await interaction.reply({
                 content: `✅ Prefix changed to \`${newPrefix}\``,
@@ -345,53 +361,31 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
 
   switch (value) {
     case 'prefix':
-      embed
-        .setTitle('Prefix Settings')
-        .setDescription(`Current prefix: \`${config.prefix}\`\n\nUse the button below to change the bot's prefix for this server.`);
+      embed = buildPrefixEmbed(config);
       rows = buildPrefixRows(true);
       break;
     case 'roles':
-      embed
-        .setTitle('Mod roles')
-        .setDescription(((config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map(r => `<@&${r}>`).join(', ') : 'None')) + '\n\nNote: Re-select roles (including previously selected) to ensure they are included.');
+      embed = buildRoleEmbed(config);
       rows = buildRoleRows(true);
       break;
-    case 'roles_edit':
-      // No-op here; role selection handled by RoleSelectMenu
+    case 'permissions':
+      embed = buildPermissionsEmbed(config);
+      rows = buildPermissionsRows(true);
       break;
     case 'logging':
-      embed
-        .setTitle('Logging')
-        .addFields(
-          { name: 'Enabled', value: config.logging?.enabled ? 'Yes' : 'No', inline: true },
-          { name: 'Log Channel', value: config.logging?.logChannelId ? `<#${config.logging.logChannelId}>` : 'Not set', inline: true }
-        );
+      embed = buildLoggingEmbed(config);
       rows = buildLoggingRows(true);
       break;
     case 'honeypot':
-      embed
-        .setTitle('Honeypot')
-        .addFields(
-          { name: 'Enabled', value: config.features?.honeypot?.enabled ? 'Yes' : 'No', inline: true },
-          { name: 'Channel', value: config.features?.honeypot?.channelId ? `<#${config.features.honeypot.channelId}>` : 'Not set', inline: true },
-          { name: 'Auto Unban', value: config.features?.honeypot?.autoUnban ? 'Yes' : 'No', inline: true },
-          { name: 'Delete Messages', value: config.features?.honeypot?.deleteMessage ? 'Yes' : 'No', inline: true },
-        );
+      embed = buildHoneypotEmbed(config);
       rows = buildHoneypotRows(true);
       break;
     case 'features':
-      embed
-        .setTitle('Features')
-        .addFields(
-          { name: 'Welcome', value: config.features?.welcome?.enabled ? 'Enabled' : 'Disabled', inline: true },
-          { name: 'Goodbye', value: config.features?.goodbye?.enabled ? 'Enabled' : 'Disabled', inline: true },
-          { name: 'Role Restore', value: config.features?.roleRestore?.enabled ? 'Enabled' : 'Disabled', inline: true },
-        )
-        .setFooter({ text: 'Note: Role Restore acts as a role logger; it stores a user\'s roles on leave and restores them when they rejoin.' });
+      embed = buildFeaturesEmbed(config);
       rows = buildFeaturesRows(true);
       break;
     default:
-      embed.setTitle('Setup').setDescription('Select a section from the menu.');
+      embed = buildMainEmbed(config);
       rows = buildMainRows();
   }
 
@@ -415,22 +409,93 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
   }
 }
 
-function buildSetupEmbed(config: ServerConfig): EmbedBuilder {
+function buildMainEmbed(config: ServerConfig): EmbedBuilder {
   const modRolesDisplay = config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map((r: string) => `<@&${r}>`).join(', ') : 'None';
   const embed = new EmbedBuilder()
     .setTitle('Setup')
+    .setDescription('Use the menu below to configure the bot. Changes save instantly when you select.\nNote: Re-select roles (including previously selected) to ensure they are included.')
     .setColor('#0099ff')
     .addFields(
       { name: 'Prefix', value: `\`${config.prefix || '.'}\``, inline: true },
       { name: 'Logging', value: (config.logging?.enabled ? 'Enabled' : 'Disabled'), inline: true },
-      { name: 'Log Channel', value: (config.logging?.logChannelId ? `<#${config.logging.logChannelId}>` : 'Not set'), inline: true },
-      { name: 'Honeypot', value: (config.features?.honeypot?.enabled ? `Enabled in <#${config.features.honeypot.channelId}>` : 'Disabled'), inline: false },
-      { name: 'Welcome Channel', value: (config.features?.welcome?.channelId ? `<#${config.features.welcome.channelId}>` : 'Not set'), inline: true },
-      { name: 'Goodbye Channel', value: (config.features?.goodbye?.channelId ? `<#${config.features.goodbye.channelId}>` : 'Not set'), inline: true },
+      { name: 'Honeypot', value: (config.features?.honeypot?.enabled ? 'Enabled' : 'Disabled'), inline: true },
+      { name: 'Mod Commands', value: (config.permissions?.moderatorCommandsEnabled ?? true) ? 'Enabled' : 'Disabled', inline: true },
       { name: 'Mod roles', value: modRolesDisplay, inline: false },
     )
-    .setTimestamp();
+    .setTimestamp()
+    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
   return embed;
+}
+
+function buildPrefixEmbed(config: ServerConfig): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle('Prefix Settings')
+    .setDescription(`Current prefix: \`${config.prefix || '.'}\`\n\nUse the button below to change the bot's prefix for this server.`)
+    .setColor('#0099ff')
+    .setTimestamp()
+    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+}
+
+function buildRoleEmbed(config: ServerConfig): EmbedBuilder {
+  const modRolesDisplay = config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map((r: string) => `<@&${r}>`).join(', ') : 'None';
+  return new EmbedBuilder()
+    .setTitle('Mod roles')
+    .setDescription(`${modRolesDisplay}\n\nNote: Re-select roles (including previously selected) to ensure they are included.`)
+    .setColor('#0099ff')
+    .setTimestamp()
+    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+}
+
+function buildPermissionsEmbed(config: ServerConfig): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle('Mod Commands')
+    .setDescription('Enable or disable all moderator commands for this server.')
+    .setColor('#0099ff')
+    .addFields(
+      { name: 'Status', value: (config.permissions?.moderatorCommandsEnabled ?? true) ? '✅ Enabled' : '❌ Disabled', inline: false },
+      { name: 'Note', value: 'When disabled, the bot will completely ignore all mod commands (no response). This applies to everyone, including the server owner.', inline: false },
+    )
+    .setTimestamp()
+    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+}
+
+function buildLoggingEmbed(config: ServerConfig): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle('Logging')
+    .setColor('#0099ff')
+    .addFields(
+      { name: 'Enabled', value: config.logging?.enabled ? 'Yes' : 'No', inline: true },
+      { name: 'Log Channel', value: config.logging?.logChannelId ? `<#${config.logging.logChannelId}>` : 'Not set', inline: true }
+    )
+    .setTimestamp()
+    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+}
+
+function buildHoneypotEmbed(config: ServerConfig): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle('Honeypot')
+    .setColor('#0099ff')
+    .addFields(
+      { name: 'Enabled', value: config.features?.honeypot?.enabled ? 'Yes' : 'No', inline: true },
+      { name: 'Channel', value: config.features?.honeypot?.channelId ? `<#${config.features.honeypot.channelId}>` : 'Not set', inline: true },
+      { name: 'Auto Unban', value: config.features?.honeypot?.autoUnban ? 'Yes' : 'No', inline: true },
+      { name: 'Delete Messages', value: config.features?.honeypot?.deleteMessage ? 'Yes' : 'No', inline: true },
+    )
+    .setTimestamp()
+    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+}
+
+function buildFeaturesEmbed(config: ServerConfig): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle('Features')
+    .setColor('#0099ff')
+    .addFields(
+      { name: 'Welcome', value: config.features?.welcome?.enabled ? 'Enabled' : 'Disabled', inline: true },
+      { name: 'Goodbye', value: config.features?.goodbye?.enabled ? 'Enabled' : 'Disabled', inline: true },
+      { name: 'Role Restore', value: config.features?.roleRestore?.enabled ? 'Enabled' : 'Disabled', inline: true },
+    )
+    .setFooter({ text: 'Note: Role Restore acts as a role logger; it stores a user\'s roles on leave and restores them when they rejoin.' })
+    .setTimestamp();
 }
 
 // Build per-section rows
@@ -441,11 +506,23 @@ function buildMainRows() {
     .addOptions(
       new StringSelectMenuOptionBuilder().setLabel('Prefix').setValue('prefix').setDescription('Set custom bot prefix'),
       new StringSelectMenuOptionBuilder().setLabel('Mod roles').setValue('roles').setDescription('View moderator roles'),
+      new StringSelectMenuOptionBuilder().setLabel('Mod Commands').setValue('permissions').setDescription('Enable/disable moderator commands'),
       new StringSelectMenuOptionBuilder().setLabel('Logging').setValue('logging').setDescription('View logging settings'),
       new StringSelectMenuOptionBuilder().setLabel('Honeypot').setValue('honeypot').setDescription('View honeypot settings'),
       new StringSelectMenuOptionBuilder().setLabel('Features').setValue('features').setDescription('View feature toggles'),
     );
   return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)];
+}
+
+function buildPermissionsRows(includeBack?: boolean) {
+  const toggleModCommands = new ButtonBuilder()
+    .setCustomId('toggle_moderator_commands')
+    .setLabel('Toggle Mod Commands')
+    .setStyle(ButtonStyle.Primary);
+  
+  const rows: any[] = [new ActionRowBuilder<ButtonBuilder>().addComponents(toggleModCommands)];
+  if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
+  return rows;
 }
 
 function buildPrefixRows(includeBack?: boolean) {

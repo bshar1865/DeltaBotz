@@ -46,6 +46,7 @@ export interface LoggingConfig {
 export interface PermissionConfig {
   ownerId: string;
   moderatorRoles: string[];
+  moderatorCommandsEnabled: boolean;
   commandPermissions: CommandPermissions;
 }
 
@@ -172,6 +173,7 @@ export const DEFAULT_CONFIG: Partial<ServerConfig> = {
   permissions: {
     ownerId: '',
     moderatorRoles: [],
+    moderatorCommandsEnabled: true,
     commandPermissions: {},
   },
   moderation: {

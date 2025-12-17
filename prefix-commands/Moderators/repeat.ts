@@ -1,5 +1,5 @@
 import { Message, Client, TextChannel } from 'discord.js';
-import configManager from '../utils/ConfigManager';
+import configManager from '../../utils/ConfigManager';
 
 export default {
   name: 'cmd',

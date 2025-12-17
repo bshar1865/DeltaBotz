@@ -23,6 +23,11 @@ export async function loadPrefixCommands(): Promise<void> {
         try {
             const command = await import(file);
             if (command.default && command.default.name) {
+                // Mark commands from Moderators folder as moderator commands
+                const isModeratorCommand = file.includes(path.sep + 'Moderators' + path.sep) || file.includes('/Moderators/');
+                if (isModeratorCommand) {
+                    command.default.isModeratorCommand = true;
+                }
                 client.prefixCommands.set(command.default.name, command.default);
             }
         } catch (error) {

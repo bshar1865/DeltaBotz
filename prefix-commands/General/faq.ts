@@ -1,6 +1,6 @@
 import { Message, Client, TextChannel } from 'discord.js';
-import configManager from '../utils/ConfigManager';
-import { getGuildDB } from '../utils/db';
+import configManager from '../../utils/ConfigManager';
+import { getGuildDB } from '../../utils/db';
 
 interface FAQEntry {
   name: string;

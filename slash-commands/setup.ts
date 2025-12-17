@@ -23,6 +23,7 @@ const command: Command = {
       .addOptions(
         new StringSelectMenuOptionBuilder().setLabel('Prefix').setValue('prefix').setDescription('Set custom bot prefix'),
         new StringSelectMenuOptionBuilder().setLabel('Mod roles').setValue('roles').setDescription('View moderator roles'),
+        new StringSelectMenuOptionBuilder().setLabel('Mod Commands').setValue('permissions').setDescription('Enable/disable moderator commands'),
         new StringSelectMenuOptionBuilder().setLabel('Logging').setValue('logging').setDescription('View logging settings'),
         new StringSelectMenuOptionBuilder().setLabel('Honeypot').setValue('honeypot').setDescription('View honeypot settings'),
         new StringSelectMenuOptionBuilder().setLabel('Features').setValue('features').setDescription('View feature toggles'),
@@ -39,6 +40,7 @@ const command: Command = {
         { name: 'Prefix', value: `\`${config.prefix}\``, inline: true },
         { name: 'Logging', value: config.logging.enabled ? 'Enabled' : 'Disabled', inline: true },
         { name: 'Honeypot', value: config.features.honeypot.enabled ? 'Enabled' : 'Disabled', inline: true },
+        { name: 'Mod Commands', value: (config.permissions.moderatorCommandsEnabled ?? true) ? 'Enabled' : 'Disabled', inline: true },
         { name: 'Mod roles', value: modRolesDisplay, inline: false },
       )
       .setColor('#0099ff')

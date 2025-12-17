@@ -1,5 +1,5 @@
 import { Message, Guild, TextChannel } from 'discord.js';
-import configManager from '../utils/ConfigManager';
+import configManager from '../../utils/ConfigManager';
 
 module.exports = {
     name: 'giver',

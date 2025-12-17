@@ -1,5 +1,5 @@
 import { Message, GuildMember, TextChannel, PermissionFlagsBits } from 'discord.js';
-import configManager from '../utils/ConfigManager';
+import configManager from '../../utils/ConfigManager';
 
 export default {
   name: 'removec',

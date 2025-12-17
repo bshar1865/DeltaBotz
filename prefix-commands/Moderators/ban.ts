@@ -1,6 +1,6 @@
 import { Message, Client, TextChannel, EmbedBuilder, GuildMember } from 'discord.js';
-import idclass from '../utils/idclass';
-import configManager from '../utils/ConfigManager';
+import idclass from '../../utils/idclass';
+import configManager from '../../utils/ConfigManager';
 
 export default {
   name: 'ban',

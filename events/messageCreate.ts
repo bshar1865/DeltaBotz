@@ -3,7 +3,7 @@ import { ExtendedClient } from "../utils/ExtendedClient";
 import db, { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
 import { logError } from "../utils/errorLogger";
-import { getEmbeddableUrl } from "../prefix-commands/embed";
+import { getEmbeddableUrl } from "../prefix-commands/General/embed";
 
 const defaultPrefix = ".";
 
@@ -192,15 +192,29 @@ export default {
       const command = client.prefixCommands.get(commandName);
 
       if (command) {
-        const allModRoles = config.permissions.moderatorRoles;
-        if (
-          message.author.id !== config.permissions.ownerId &&
-          !message.member?.roles.cache.some((r) => allModRoles.includes(r.id))
-        ) {
-          return message.reply({
-            content: "You don't have permission to use this command.",
-            allowedMentions: { parse: [] },
-          });
+        // Only check moderator commands toggle for commands in the Moderators folder
+        if (command.isModeratorCommand) {
+          const moderatorCommandsEnabled = config.permissions.moderatorCommandsEnabled ?? true;
+          
+          // If moderator commands are disabled, ignore the command completely (no response)
+          // This applies to everyone, including the owner - the bot will not respond at all
+          if (!moderatorCommandsEnabled) {
+            return;
+          }
+        }
+        
+        // Check normal permissions (only for moderator commands)
+        if (command.isModeratorCommand) {
+          const allModRoles = config.permissions.moderatorRoles;
+          if (
+            message.author.id !== config.permissions.ownerId &&
+            !message.member?.roles.cache.some((r) => allModRoles.includes(r.id))
+          ) {
+            return message.reply({
+              content: "You don't have permission to use this command.",
+              allowedMentions: { parse: [] },
+            });
+          }
         }
 
         try {

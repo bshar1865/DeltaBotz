@@ -1,4 +1,4 @@
-import configManager from '../utils/ConfigManager';
+import configManager from '../../utils/ConfigManager';
 import { EmbedBuilder } from 'discord.js';
 
 module.exports = {

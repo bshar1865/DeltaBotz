@@ -5,7 +5,7 @@ import {
     TextChannel,
     EmbedBuilder
   } from 'discord.js';
-import configManager from '../utils/ConfigManager';
+import configManager from '../../utils/ConfigManager';
   export default {
     name: 'softban',
     description: 'Softbans a user (bans, deletes messages, DMs an invite, then unbans).',

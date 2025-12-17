@@ -1,7 +1,7 @@
 import { Message, MessageCollector, TextChannel, DMChannel, NewsChannel } from 'discord.js';
-import configManager from '../utils/ConfigManager';
-import { getGuildDB } from '../utils/db';
-import { ExtendedClient } from '../utils/ExtendedClient';
+import configManager from '../../utils/ConfigManager';
+import { getGuildDB } from '../../utils/db';
+import { ExtendedClient } from '../../utils/ExtendedClient';
 
 interface TempCommand {
   name: string;
