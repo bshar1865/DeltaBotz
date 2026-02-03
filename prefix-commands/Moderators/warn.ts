@@ -15,7 +15,9 @@ export default {
     const member = message.member;
     if (!member) return;
 
-    const hasRequiredRole = member.roles.cache.some(role =>
+    // Owner bypass
+    const isOwner = message.author.id === config.permissions.ownerId;
+    const hasRequiredRole = isOwner || member.roles.cache.some(role =>
       requiredRoles.includes(role.id)
     );
 

@@ -13,7 +13,10 @@ import configManager from '../../utils/ConfigManager';
     async execute(message: Message, args: string[], client: Client) {
       const config = await configManager.getOrCreateConfig(message.guild!);
       const modRoles: string[] = config.permissions.moderatorRoles || [];
-      const hasRequiredRole = message.member?.roles.cache.some(role => modRoles.includes(role.id));
+      
+      // Owner bypass
+      const isOwner = message.author.id === config.permissions.ownerId;
+      const hasRequiredRole = isOwner || message.member?.roles.cache.some(role => modRoles.includes(role.id));
       if (!hasRequiredRole) {
         return message.reply({
           content: 'You do not have permission to use this command.',
@@ -65,7 +68,7 @@ import configManager from '../../utils/ConfigManager';
         }
   
         // Ban
-        await user.ban({ deleteMessageSeconds: 60 * 60 * 24 * 7, reason: `Softban: ${reason}` });
+        await user.ban({ reason: `Softban: ${reason}` });
         message.reply({
           content: `<@${userId}> has been __**SOFTBANNED**__.`,
           allowedMentions: { parse: [] }

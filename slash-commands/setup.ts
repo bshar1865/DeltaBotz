@@ -26,7 +26,8 @@ const command: Command = {
         new StringSelectMenuOptionBuilder().setLabel('Mod Commands').setValue('permissions').setDescription('Enable/disable moderator commands'),
         new StringSelectMenuOptionBuilder().setLabel('Logging').setValue('logging').setDescription('View logging settings'),
         new StringSelectMenuOptionBuilder().setLabel('Honeypot').setValue('honeypot').setDescription('View honeypot settings'),
-        new StringSelectMenuOptionBuilder().setLabel('Features').setValue('features').setDescription('View feature toggles'),
+        new StringSelectMenuOptionBuilder().setLabel('Welcome & Role restoration').setValue('welcome_role').setDescription('Welcome, Goodbye, and Role Restore'),
+        new StringSelectMenuOptionBuilder().setLabel('Others').setValue('auto_moderation').setDescription('Auto Embed and Invite Block'),
       );
 
     const row1 = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(viewMenu);

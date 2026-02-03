@@ -8,7 +8,9 @@ export default {
     const config = await configManager.getOrCreateConfig(message.guild!);
     const requiredRoles: string[] = config.permissions.moderatorRoles || [];
 
-    const hasRequiredRole = message.member?.roles.cache.some(role =>
+    // Owner bypass
+    const isOwner = message.author.id === config.permissions.ownerId;
+    const hasRequiredRole = isOwner || message.member?.roles.cache.some(role =>
       requiredRoles.includes(role.id)
     );
 

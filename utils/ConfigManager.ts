@@ -150,6 +150,12 @@ export class ConfigManager {
           autoBan: true,
           autoUnban: false,
         },
+        autoEmbed: {
+          enabled: true,
+        },
+        inviteBlock: {
+          enabled: false,
+        },
       },
       channels: {},
       roles: {

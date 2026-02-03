@@ -15,7 +15,10 @@ export default {
         if (!message.guild || !message.member) return;
 
         const guildConfig = await configManager.getOrCreateConfig(message.guild);
-        const hasRequiredRole = message.member.roles.cache.some(role =>
+        
+        // Owner bypass
+        const isOwner = message.author.id === guildConfig.permissions.ownerId;
+        const hasRequiredRole = isOwner || message.member.roles.cache.some(role =>
             (guildConfig.permissions.moderatorRoles || []).includes(role.id)
         );
 

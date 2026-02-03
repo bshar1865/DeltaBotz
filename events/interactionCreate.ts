@@ -118,9 +118,9 @@ export default {
         if (interaction.customId === 'setup_welcome_channel') {
           config.features.welcome = { ...(config.features.welcome || {}), channelId };
           await configManager.saveServerConfig(config);
-          const embed = buildFeaturesEmbed(config);
+          const embed = buildWelcomeRoleEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
           } catch (error) {
             console.error('Failed to update welcome channel:', error);
             if ((error as any).code === 10062) {
@@ -133,9 +133,9 @@ export default {
         if (interaction.customId === 'setup_goodbye_channel') {
           config.features.goodbye = { ...(config.features.goodbye || {}), channelId };
           await configManager.saveServerConfig(config);
-          const embed = buildFeaturesEmbed(config);
+          const embed = buildWelcomeRoleEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
           } catch (error) {
             console.error('Failed to update goodbye channel:', error);
             if ((error as any).code === 10062) {
@@ -162,9 +162,9 @@ export default {
         if (interaction.customId === 'toggle_welcome') {
           config.features.welcome = { ...(config.features.welcome || {}), enabled: !config.features?.welcome?.enabled };
           await configManager.saveServerConfig(config);
-          const embed = buildFeaturesEmbed(config);
+          const embed = buildWelcomeRoleEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
           } catch (error) {
             console.error('Failed to update welcome toggle:', error);
             if ((error as any).code === 10062) return;
@@ -175,9 +175,9 @@ export default {
         if (interaction.customId === 'toggle_goodbye') {
           config.features.goodbye = { ...(config.features.goodbye || {}), enabled: !config.features?.goodbye?.enabled };
           await configManager.saveServerConfig(config);
-          const embed = buildFeaturesEmbed(config);
+          const embed = buildWelcomeRoleEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
           } catch (error) {
             console.error('Failed to update goodbye toggle:', error);
             if ((error as any).code === 10062) return;
@@ -188,11 +188,37 @@ export default {
         if (interaction.customId === 'toggle_restore') {
           config.features.roleRestore = { ...(config.features.roleRestore || {}), enabled: !config.features?.roleRestore?.enabled };
           await configManager.saveServerConfig(config);
-          const embed = buildFeaturesEmbed(config);
+          const embed = buildWelcomeRoleEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildFeaturesRows(true) });
+            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
           } catch (error) {
             console.error('Failed to update restore toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
+        }
+        if (interaction.customId === 'toggle_auto_embed') {
+          config.features.autoEmbed = { ...(config.features.autoEmbed || {}), enabled: !config.features?.autoEmbed?.enabled };
+          await configManager.saveServerConfig(config);
+          const embed = buildAutoModerationEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildAutoModerationRows(true) });
+          } catch (error) {
+            console.error('Failed to update auto embed toggle:', error);
+            if ((error as any).code === 10062) return;
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+          }
+          return;
+        }
+        if (interaction.customId === 'toggle_invite_block') {
+          config.features.inviteBlock = { ...(config.features.inviteBlock || {}), enabled: !config.features?.inviteBlock?.enabled };
+          await configManager.saveServerConfig(config);
+          const embed = buildAutoModerationEmbed(config);
+          try {
+            await interaction.update({ embeds: [embed], components: buildAutoModerationRows(true) });
+          } catch (error) {
+            console.error('Failed to update invite block toggle:', error);
             if ((error as any).code === 10062) return;
             await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
           }
@@ -380,9 +406,13 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
       embed = buildHoneypotEmbed(config);
       rows = buildHoneypotRows(true);
       break;
-    case 'features':
-      embed = buildFeaturesEmbed(config);
-      rows = buildFeaturesRows(true);
+    case 'welcome_role':
+      embed = buildWelcomeRoleEmbed(config);
+      rows = buildWelcomeRoleRows(true);
+      break;
+    case 'auto_moderation':
+      embed = buildAutoModerationEmbed(config);
+      rows = buildAutoModerationRows(true);
       break;
     default:
       embed = buildMainEmbed(config);
@@ -485,9 +515,9 @@ function buildHoneypotEmbed(config: ServerConfig): EmbedBuilder {
     .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
 }
 
-function buildFeaturesEmbed(config: ServerConfig): EmbedBuilder {
+function buildWelcomeRoleEmbed(config: ServerConfig): EmbedBuilder {
   return new EmbedBuilder()
-    .setTitle('Features')
+    .setTitle('Welcome & Role restoration')
     .setColor('#0099ff')
     .addFields(
       { name: 'Welcome', value: config.features?.welcome?.enabled ? 'Enabled' : 'Disabled', inline: true },
@@ -495,6 +525,18 @@ function buildFeaturesEmbed(config: ServerConfig): EmbedBuilder {
       { name: 'Role Restore', value: config.features?.roleRestore?.enabled ? 'Enabled' : 'Disabled', inline: true },
     )
     .setFooter({ text: 'Note: Role Restore acts as a role logger; it stores a user\'s roles on leave and restores them when they rejoin.' })
+    .setTimestamp();
+}
+
+function buildAutoModerationEmbed(config: ServerConfig): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle('Others')
+    .setColor('#0099ff')
+    .addFields(
+      { name: 'Auto Embed', value: config.features?.autoEmbed?.enabled ? 'Enabled' : 'Disabled', inline: true },
+      { name: 'Invite Block', value: config.features?.inviteBlock?.enabled ? 'Enabled' : 'Disabled', inline: true },
+    )
+    .setFooter({ text: 'Auto Embed converts Instagram links to embeddable format. Invite Block deletes Discord invite links (mods are exempt).' })
     .setTimestamp();
 }
 
@@ -509,7 +551,8 @@ function buildMainRows() {
       new StringSelectMenuOptionBuilder().setLabel('Mod Commands').setValue('permissions').setDescription('Enable/disable moderator commands'),
       new StringSelectMenuOptionBuilder().setLabel('Logging').setValue('logging').setDescription('View logging settings'),
       new StringSelectMenuOptionBuilder().setLabel('Honeypot').setValue('honeypot').setDescription('View honeypot settings'),
-      new StringSelectMenuOptionBuilder().setLabel('Features').setValue('features').setDescription('View feature toggles'),
+      new StringSelectMenuOptionBuilder().setLabel('Welcome & Role restoration').setValue('welcome_role').setDescription('Welcome, Goodbye, and Role Restore'),
+      new StringSelectMenuOptionBuilder().setLabel('Others').setValue('auto_moderation').setDescription('Auto Embed and Invite Block'),
     );
   return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)];
 }
@@ -580,8 +623,8 @@ function buildHoneypotRows(includeBack?: boolean) {
   return rows;
 }
 
-function buildFeaturesRows(includeBack?: boolean) {
-  // Buttons to toggle features
+function buildWelcomeRoleRows(includeBack?: boolean) {
+  // Buttons to toggle welcome/role features
   const toggleWelcome = new ButtonBuilder().setCustomId('toggle_welcome').setLabel('Toggle Welcome').setStyle(ButtonStyle.Secondary);
   const toggleGoodbye = new ButtonBuilder().setCustomId('toggle_goodbye').setLabel('Toggle Goodbye').setStyle(ButtonStyle.Secondary);
   const toggleRestore = new ButtonBuilder().setCustomId('toggle_restore').setLabel('Toggle Role Restore').setStyle(ButtonStyle.Secondary);
@@ -591,6 +634,17 @@ function buildFeaturesRows(includeBack?: boolean) {
     new ActionRowBuilder<ButtonBuilder>().addComponents(toggleWelcome, toggleGoodbye, toggleRestore),
     new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(welcomeChannel),
     new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(goodbyeChannel),
+  ];
+  if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
+  return rows;
+}
+
+function buildAutoModerationRows(includeBack?: boolean) {
+  // Buttons to toggle auto moderation features
+  const toggleAutoEmbed = new ButtonBuilder().setCustomId('toggle_auto_embed').setLabel('Toggle Auto Embed').setStyle(ButtonStyle.Secondary);
+  const toggleInviteBlock = new ButtonBuilder().setCustomId('toggle_invite_block').setLabel('Toggle Invite Block').setStyle(ButtonStyle.Secondary);
+  const rows: any[] = [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(toggleAutoEmbed, toggleInviteBlock),
   ];
   if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
   return rows;

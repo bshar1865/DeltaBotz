@@ -13,7 +13,10 @@ import configManager from '../../utils/ConfigManager';
     async execute(message: Message, args: string[]) {
       const config = await configManager.getOrCreateConfig(message.guild!);
       const requiredRoles = config.permissions.moderatorRoles || [];
-      const hasRequiredRole = message.member?.roles.cache.some(role =>
+      
+      // Owner bypass
+      const isOwner = message.author.id === config.permissions.ownerId;
+      const hasRequiredRole = isOwner || message.member?.roles.cache.some(role =>
         requiredRoles.includes(role.id)
       );
   

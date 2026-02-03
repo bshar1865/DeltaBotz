@@ -103,6 +103,12 @@ export interface FeatureConfig {
     autoBan: boolean;
     autoUnban?: boolean;
   };
+  autoEmbed: {
+    enabled: boolean;
+  };
+  inviteBlock: {
+    enabled: boolean;
+  };
 }
 
 export interface ChannelConfig {
@@ -212,6 +218,12 @@ export const DEFAULT_CONFIG: Partial<ServerConfig> = {
       deleteMessage: true,
       autoBan: true,
       autoUnban: false,
+    },
+    autoEmbed: {
+      enabled: true,
+    },
+    inviteBlock: {
+      enabled: false,
     },
   },
   channels: {},

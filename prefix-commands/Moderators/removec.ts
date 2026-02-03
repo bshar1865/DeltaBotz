@@ -8,7 +8,10 @@ export default {
 
   async execute(message: Message, args: string[]) {
     const config = await configManager.getOrCreateConfig(message.guild!);
-    const hasRequiredRole = message.member?.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id));
+    
+    // Owner bypass
+    const isOwner = message.author.id === config.permissions.ownerId;
+    const hasRequiredRole = isOwner || message.member?.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id));
     if (!hasRequiredRole) {
       return message.reply({
         content: 'You do not have permission to use this command.',

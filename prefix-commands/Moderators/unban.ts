@@ -14,11 +14,13 @@ import configManager from '../../utils/ConfigManager';
     async execute(message: Message, args: string[]) {
       const config = await configManager.getOrCreateConfig(message.guild!);
       const requiredRoles: string[] = config.permissions.moderatorRoles || [];
-  
-      const hasRequiredRole = message.member?.roles.cache.some(role =>
+
+      // Owner bypass
+      const isOwner = message.author.id === config.permissions.ownerId;
+      const hasRequiredRole = isOwner || message.member?.roles.cache.some(role =>
         requiredRoles.includes(role.id)
       );
-  
+
       if (!hasRequiredRole) {
         return message.reply({ content: 'You do not have permission to use this command.' });
       }

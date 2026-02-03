@@ -17,7 +17,11 @@ export default {
     const member = message.member as GuildMember;
     const config = await configManager.getOrCreateConfig(message.guild!);
 
-    if (!member.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id))) {
+    // Owner bypass
+    const isOwner = message.author.id === config.permissions.ownerId;
+    const hasRequiredRole = isOwner || member.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id));
+    
+    if (!hasRequiredRole) {
       return message.reply({
         content: 'You do not have permission to use this command.',
         allowedMentions: { parse: [] }

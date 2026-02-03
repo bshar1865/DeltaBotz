@@ -14,7 +14,11 @@ module.exports = {
         const requiredRoles = config.permissions.moderatorRoles || [];
         const memberRoles = message.member?.roles?.cache;
 
-        if (!memberRoles || !memberRoles.some((role: { id: string; }) => requiredRoles.includes(role.id))) {
+        // Owner bypass
+        const isOwner = message.author.id === config.permissions.ownerId;
+        const hasRequiredRole = isOwner || (memberRoles && memberRoles.some((role: { id: string; }) => requiredRoles.includes(role.id)));
+
+        if (!hasRequiredRole) {
             return message.reply({
                 content: 'You do not have permission to use this command.',
                 allowedMentions: { parse: [] }

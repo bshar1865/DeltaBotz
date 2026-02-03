@@ -13,7 +13,10 @@ module.exports = {
         const guild = message.guild;
         const config = await configManager.getOrCreateConfig(guild);
         const requiredRoles: string[] = config.permissions.moderatorRoles || [];
-        const hasRequiredRole = message.member.roles.cache.some((role: any) => requiredRoles.includes(role.id));
+        
+        // Owner bypass
+        const isOwner = message.author.id === config.permissions.ownerId;
+        const hasRequiredRole = isOwner || message.member.roles.cache.some((role: any) => requiredRoles.includes(role.id));
 
         if (!hasRequiredRole) {
             return message.reply({

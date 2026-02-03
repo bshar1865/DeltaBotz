@@ -4,6 +4,7 @@ import db, { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
 import { logError } from "../utils/errorLogger";
 import { getEmbeddableUrl } from "../prefix-commands/General/embed";
+import { deleteUserMessagesLastDay } from "../utils/messageDeletion";
 
 const defaultPrefix = ".";
 
@@ -62,10 +63,20 @@ export default {
             me.permissions.has(PermissionsBitField.Flags.BanMembers) &&
             me.roles.highest.comparePositionTo(member.roles.highest) > 0
           ) {
+            // Delete user's messages from last 1 day before banning
+            try {
+              const deletedCount = await deleteUserMessagesLastDay(message.guild!, message.author.id);
+              if (deletedCount > 0) {
+                console.log(`Deleted ${deletedCount} messages from user ${message.author.id} before honeypot ban`);
+              }
+            } catch (error) {
+              console.error('Error deleting user messages before honeypot ban:', error);
+              // Continue with ban even if message deletion fails
+            }
+
             const banSuccess = await message.guild!.members
               .ban(message.author.id, {
                 reason: `Posted in honeypot channel (${message.channel.id})`,
-                deleteMessageDays: config.moderation.punishment.deleteMessageDays,
               })
               .then(() => true)
               .catch(() => false);
@@ -113,8 +124,46 @@ export default {
       const config = await configManager.getOrCreateConfig(message.guild);
       const serverPrefix = config.prefix || defaultPrefix;
       
-      // --- Auto-detect embeddable links (only if not a command) ---
-      if (!message.author.bot && !message.system && !message.content.startsWith(serverPrefix)) {
+      // --- Discord Invite Blocking (before other checks) ---
+      if (!message.author.bot && !message.system && config.features.inviteBlock?.enabled) {
+        const member = message.member;
+        if (member) {
+          // Check if user is mod (exemption)
+          const allModRoles = config.permissions.moderatorRoles;
+          const isMod = message.author.id === config.permissions.ownerId || 
+                       member.roles.cache.some((r) => allModRoles.includes(r.id));
+          
+          if (!isMod) {
+            // Check for Discord invite links
+            const invitePattern = /(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9]+/gi;
+            if (invitePattern.test(message.content)) {
+              const me = message.guild!.members.me!;
+              
+              // Delete message if bot has permission
+              if (me.permissionsIn(message.channel).has(PermissionsBitField.Flags.ManageMessages)) {
+                await message.delete().catch(() => null);
+              }
+              
+              // Log to log channel if enabled
+              const logChannelId = config.logging.logChannelId;
+              if (logChannelId && config.logging.enabled) {
+                const logChannel = await message.guild!.channels.fetch(logChannelId).catch(() => null);
+                if (logChannel?.isTextBased()) {
+                  await logChannel.send({
+                    content: `🚫 **Invite Link Blocked**\n**User:** ${message.author.tag} (${message.author.id})\n**Channel:** <#${message.channel.id}>\n**Message:** ${message.content.substring(0, 500)}`,
+                    allowedMentions: { parse: [] }
+                  }).catch(() => null);
+                }
+              }
+              
+              return; // Don't process further
+            }
+          }
+        }
+      }
+      
+      // --- Auto-detect embeddable links (only if not a command and feature enabled) ---
+      if (!message.author.bot && !message.system && !message.content.startsWith(serverPrefix) && config.features.autoEmbed?.enabled) {
         // Check for Instagram URLs
         const instagramUrlPattern = /https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[A-Za-z0-9_-]+/gi;
         const instagramUrls = message.content.match(instagramUrlPattern);
