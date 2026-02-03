@@ -75,7 +75,7 @@ Confirmation of stored data
 Data correction or deletion
 
 Requests can be made via:
-[EMAIL / SUPPORT SERVER]
+[bsharesfky@gmail.com / @bshar1865 on Discord]
 
 8. Third-Party Services
 
@@ -88,4 +88,4 @@ This Privacy Policy may be updated periodically. Continued use of the Bot indica
 10. Contact
 
 For privacy-related inquiries:
-[EMAIL / DISCORD TAG / SUPPORT SERVER]
+[bsharesfky@gmail.com / @bshar1865 on Discord / SUPPORT SERVER is soon to be added.]
