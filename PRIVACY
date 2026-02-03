@@ -1,0 +1,91 @@
+Privacy Policy
+
+Last updated: 02/03/2026
+
+1. Transparency & Open Source
+
+DeltaBotz is an open-source project.
+The source code that governs data handling can be reviewed publicly at:
+https://github.com/bshar1865/DeltaBotz
+
+This allows users to verify what data is collected and how it is used.
+
+2. Data We Collect
+
+The Bot may collect only the minimum data necessary for functionality, including:
+
+Discord User IDs
+
+Discord Server (Guild) IDs
+
+Channel IDs
+
+Configuration settings
+
+Command usage metadata
+
+Message content is not collected or stored, unless explicitly required for a specific feature (e.g. moderation or logging).
+
+3. Purpose of Data Collection
+
+Data is used solely to:
+
+Provide core bot functionality
+
+Store user or server preferences
+
+Prevent abuse
+
+Improve reliability and performance
+
+4. Data Storage & Security
+
+Data is stored securely with restricted access
+
+Reasonable safeguards are used to protect stored information
+
+Absolute security cannot be guaranteed
+
+5. Data Sharing
+
+We do not sell, trade, or monetize user data.
+
+Data may only be disclosed:
+
+If legally required
+
+To enforce these Terms
+
+To protect users, servers, or the Bot’s integrity
+
+6. Data Retention & Deletion
+
+Data is retained only as long as necessary
+
+Server-specific data may be removed when the Bot is removed from a server
+
+Users may request deletion of their data where technically feasible
+
+7. User Rights
+
+You may request:
+
+Confirmation of stored data
+
+Data correction or deletion
+
+Requests can be made via:
+[EMAIL / SUPPORT SERVER]
+
+8. Third-Party Services
+
+The Bot operates within Discord and is subject to Discord’s own Privacy Policy. We are not responsible for Discord’s data practices.
+
+9. Changes to This Policy
+
+This Privacy Policy may be updated periodically. Continued use of the Bot indicates acceptance of the revised policy.
+
+10. Contact
+
+For privacy-related inquiries:
+[EMAIL / DISCORD TAG / SUPPORT SERVER]
