@@ -1,8 +1,7 @@
-import { REST, Routes } from 'discord.js';
+import { REST, Routes, RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js';
 import { client } from './client';
-import { Command } from './types';
 
-export async function registerSlashCommands(commands: Command[]): Promise<void> {
+export async function registerSlashCommands(commands: RESTPostAPIChatInputApplicationCommandsJSONBody[]): Promise<void> {
     if (!process.env.DISCORD_TOKEN) throw new Error('Missing DISCORD_TOKEN in .env!');
 
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);

@@ -1,4 +1,4 @@
-import { Client, Events, TextChannel, DMChannel, NewsChannel } from 'discord.js';
+import { Client, Events, TextChannel, DMChannel, NewsChannel, ActivityType } from 'discord.js';
 import idclass from '../utils/idclass';
 
 const startTime = Date.now();
@@ -12,6 +12,7 @@ export default {
 
     console.log(`Logged in as ${client.user!.tag}`);
     console.log(`Startup time: ${startupTime}s`);
+    client.user?.setActivity('DeltaBotz', { type: ActivityType.Watching });
 
     const logChannel = await client.channels.fetch(idclass.channelErrorLogs()).catch(() => null);
     if (

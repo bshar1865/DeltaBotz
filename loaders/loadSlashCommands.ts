@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { client } from '../client';
-import { Command } from '../types';
+import { RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js';
 
 function getAllFiles(dir: string, ext = '.ts'): string[] {
     let results: string[] = [];
@@ -14,8 +14,8 @@ function getAllFiles(dir: string, ext = '.ts'): string[] {
     return results;
 }
 
-export async function loadSlashCommands(): Promise<Command[]> {
-    const commands: Command[] = [];
+export async function loadSlashCommands(): Promise<RESTPostAPIChatInputApplicationCommandsJSONBody[]> {
+    const commands: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
     const commandsPath = path.join(__dirname, '../slash-commands');
     const commandFiles = getAllFiles(commandsPath);
 

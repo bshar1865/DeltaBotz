@@ -2,9 +2,6 @@ import { QuickDB } from 'quick.db';
 import fs from 'fs';
 import path from 'path';
 
-// Global default DB (legacy/shared)
-export const db = new QuickDB();
-
 // Cache per-guild DB instances to avoid reopening files
 const guildIdToDb = new Map<string, QuickDB>();
 
@@ -27,4 +24,3 @@ export function getGuildDB(guildId: string): QuickDB {
   return scoped;
 }
 
-export default db;

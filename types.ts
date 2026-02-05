@@ -1,6 +1,5 @@
 import { 
     ClientEvents, 
-    CommandInteraction, 
     ButtonInteraction, 
     SlashCommandBuilder, 
     ChatInputCommandInteraction,
@@ -9,8 +8,9 @@ import {
 
 export interface Command {
     data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
-    execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+    execute: (...args: any[]) => Promise<void>;
     buttonHandler?: (interaction: ButtonInteraction) => Promise<void>;
+    isModeratorCommand?: boolean;
 }
 
 export interface Event {

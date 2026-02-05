@@ -1,6 +1,6 @@
 import { Events, Interaction, StringSelectMenuInteraction, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { logError } from "../utils/errorLogger";
-import { ExtendedClient } from "../utils/ExtendedClient";
+import { ExtendedClient } from "../client";
 import configManager from "../utils/ConfigManager";
 import idclass from "../utils/idclass";
 import { ServerConfig } from "../types/config";
@@ -330,7 +330,7 @@ export default {
             const embed = buildPrefixEmbed(config);
             try {
               await interaction.reply({
-                content: `✅ Prefix changed to \`${newPrefix}\``,
+                content: `Prefix changed to \`${newPrefix}\``,
                 embeds: [embed],
                 components: buildPrefixRows(true),
                 flags: 64
@@ -340,7 +340,7 @@ export default {
               // If reply failed, try followUp only if we already replied
               if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({
-                  content: `✅ Prefix changed to \`${newPrefix}\``,
+                  content: `Prefix changed to \`${newPrefix}\``,
                   flags: 64
                 });
               } else {
@@ -351,7 +351,7 @@ export default {
           } else {
             try {
               await interaction.reply({
-                content: '❌ Invalid prefix. Please use 1-5 characters.',
+                content: 'Invalid prefix. Please use 1-5 characters.',
                 flags: 64
               });
             } catch (error) {
@@ -359,7 +359,7 @@ export default {
               // If reply failed, try followUp only if we already replied
               if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({
-                  content: '❌ Invalid prefix. Please use 1-5 characters.',
+                  content: 'Invalid prefix. Please use 1-5 characters.',
                   flags: 64
                 });
               } else {
@@ -482,7 +482,7 @@ function buildPermissionsEmbed(config: ServerConfig): EmbedBuilder {
     .setDescription('Enable or disable all moderator commands for this server.')
     .setColor('#0099ff')
     .addFields(
-      { name: 'Status', value: (config.permissions?.moderatorCommandsEnabled ?? true) ? '✅ Enabled' : '❌ Disabled', inline: false },
+      { name: 'Status', value: (config.permissions?.moderatorCommandsEnabled ?? true) ? 'Enabled' : 'Disabled', inline: false },
       { name: 'Note', value: 'When disabled, the bot will completely ignore all mod commands (no response). This applies to everyone, including the server owner.', inline: false },
     )
     .setTimestamp()

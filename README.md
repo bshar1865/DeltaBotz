@@ -1,6 +1,6 @@
 # DeltaBotz
 
-An open-source Discord bot providing moderation, logging, emoji copying, bot status, honeypot, and other features with per-server configuration.
+An open-source Discord bot focused on moderation, logging, emoji copying, honeypot protection, and per-server configuration.
 
 **Terms of Service:** [TOS.md](TOS.md)  
 **Privacy Policy:** [PRIVACY.md](PRIVACY.md)
@@ -9,11 +9,11 @@ An open-source Discord bot providing moderation, logging, emoji copying, bot sta
 
 - **Moderation Commands** - Ban, kick, mute, warn, purge, and more
 - **Honeypot System** - Auto-ban trap channels to catch rule-breakers
-- **Auto Embed** - Automatically converts Instagram links to embeddable format (enabled by default and soon others will be embeddable too)
-- **Invite Blocking** - Automatically deletes Discord invite links (mods are exempt, this is disabled by default. can be enabled through /setup) 
+- **Auto Embed** - Converts Instagram links to embeddable format (enabled by default)
+- **Invite Blocking** - Deletes Discord invite links (mods are exempt, disabled by default)
 - **FAQ** - Server-specific FAQ management
 - **Welcome/Goodbye Messages** - Customizable member join/leave messages
-- **Role Restore** - Automatically restores roles when members rejoin using Quick.DB (this is disabled by default, which can be enabled through /setup)
+- **Role Restore** - Restores roles when members rejoin using Quick.DB (disabled by default)
 
 ## Quick Start
 
@@ -23,17 +23,17 @@ An open-source Discord bot providing moderation, logging, emoji copying, bot sta
    ```
 
 2. **Configure environment**
-   rename example.env to .env
-   Edit `.env` and set your `DISCORD_TOKEN`
+   Rename `example.env` to `.env` and set your `DISCORD_TOKEN`.
 
 3. **Run the bot**
    ```bash
-   bunx ts-node index.ts (if you have bun installed)
-
+   bunx ts-node index.ts
+   ```
    or
-   
+   ```bash
    npx ts-node index.ts
    ```
+
 ## Setup
 
 Use `/setup` in Discord to configure the bot with an interactive menu:
@@ -46,31 +46,31 @@ Use `/setup` in Discord to configure the bot with an interactive menu:
 - **Welcome & Role restoration** - Welcome, Goodbye, and Role Restore
 - **Others** - Auto Embed and Invite Block
 
-**Note:** For best experience, use Discord desktop app; some buttons may not display on mobile.
+Note: For best experience, use the Discord desktop app; some buttons may not display on mobile.
 
 ## Data Layout
 
 ```
 configs/
-  └── <guildId>/
-      ├── config.json      # Server configuration
-      └── json.sqlite      # Per-guild database
+  <guildId>/
+    config.json      # Server configuration
+    json.sqlite      # Per-guild database
 ```
 
 ## Key Features
 
-**Honeypot System** - Designate a channel as a "honeypot". Users who post are automatically banned. Optional auto-unban after 10 seconds. Moderators are exempt.
+**Honeypot System** - Designate a channel as a honeypot. Users who post are automatically banned. Optional auto-unban after 10 seconds. Moderators are exempt.
 
-**Auto Embed** - Automatically detects Instagram links and converts them to embeddable format. Enabled by default.
+**Auto Embed** - Detects Instagram links and converts them to embeddable format. Enabled by default.
 
-**Invite Blocking** - Automatically deletes messages containing Discord invite links. Blocks `discord.gg/` and `discord.com/invite` formats. Moderators are exempt.
+**Invite Blocking** - Deletes messages containing Discord invite links. Blocks `discord.gg/` and `discord.com/invite` formats. Moderators are exempt.
 
-**Role Restore** - Automatically stores user roles when they leave and restores them when they rejoin.
+**Role Restore** - Stores user roles when they leave and restores them when they rejoin.
 
 ## Permissions
 
 - Commands in the `Moderators` folder require moderator roles
-- Moderator roles are set in `/setup` → Mod Roles
+- Moderator roles are set in `/setup` -> Mod Roles
 - Moderator commands can be globally disabled
 
 ## Development
@@ -78,16 +78,17 @@ configs/
 **Project Structure:**
 ```
 DeltaBotz/
-├── index.ts                 # Main file
-├── events/                  # Event handlers
-├── prefix-commands/         # Text-based commands
-│   ├── General/            # Public commands
-│   └── Moderators/         # Mod-only commands
-├── slash-commands/          # Discord slash commands
-├── loaders/                 # Command/event loaders
-├── utils/                   # Utility modules
-└── configs/                 # Per-server data
+  index.ts                 # Main file
+  events/                  # Event handlers
+  prefix-commands/         # Text-based commands
+    General/               # Public commands
+    Moderators/            # Mod-only commands
+  slash-commands/          # Discord slash commands
+  loaders/                 # Command/event loaders
+  utils/                   # Utility modules
+  configs/                 # Per-server data
 ```
+
 ## License
 
 MIT License

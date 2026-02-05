@@ -1,7 +1,6 @@
 import { GuildMember, Events } from 'discord.js';
 import { Event } from '../types';
-import db, { getGuildDB } from '../utils/db';
-import idclass from '../utils/idclass';
+import { getGuildDB } from '../utils/db';
 import configManager from '../utils/ConfigManager';
 
 const event: Event = {

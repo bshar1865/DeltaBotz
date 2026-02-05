@@ -1,4 +1,5 @@
 import { Message, Guild, TextChannel } from 'discord.js';
+import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
 
 module.exports = {
@@ -15,7 +16,7 @@ module.exports = {
         const memberRoles = message.member?.roles?.cache;
 
         // Owner bypass
-        const isOwner = message.author.id === config.permissions.ownerId;
+        const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
         const hasRequiredRole = isOwner || (memberRoles && memberRoles.some((role: { id: string; }) => requiredRoles.includes(role.id)));
 
         if (!hasRequiredRole) {

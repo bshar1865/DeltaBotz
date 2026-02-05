@@ -9,6 +9,9 @@ import { logError } from './utils/errorLogger';
 async function init() {
     try {
         console.log('Initializing DeltaBotz...');
+        if (!process.env.DISCORD_TOKEN) {
+            throw new Error('Missing DISCORD_TOKEN in .env');
+        }
         await loadPrefixCommands();
         const slashCommands = await loadSlashCommands();
         await loadEvents();

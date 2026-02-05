@@ -196,7 +196,7 @@ export default {
 
         const contentPreview = faq.content.length > 500 ? faq.content.substring(0, 500) + '...' : faq.content;
         return message.reply({
-          content: `**Confirm Removal**\n\nAre you sure you want to remove **${faqName}**?\n\n**Content:** ${contentPreview}\n\nRun \`.faq remove ${faqName}\` again to confirm.\n\n⚠️ This action cannot be undone!`,
+          content: `**Confirm Removal**\n\nAre you sure you want to remove **${faqName}**?\n\n**Content:** ${contentPreview}\n\nRun \`.faq remove ${faqName}\` again to confirm.\n\nWarning: This action cannot be undone!`,
           allowedMentions: { parse: [] }
         });
       }
@@ -214,7 +214,7 @@ export default {
 
       if (args.length < 3) {
         return message.reply({
-          content: 'Usage: `.faq edit <name> <new content>`\nExample: `.faq edit rules Updated server rules!`\n\n⚠️ **Warning:** This replaces the entire FAQ content, not edits it. Make sure to copy the previous content and paste it again with your edits.',
+          content: 'Usage: `.faq edit <name> <new content>`\nExample: `.faq edit rules Updated server rules!`\n\nWarning: This replaces the entire FAQ content, not edits it. Make sure to copy the previous content and paste it again with your edits.',
           allowedMentions: { parse: [] }
         });
       }
@@ -246,7 +246,7 @@ export default {
       await saveFAQs(faqs);
 
       return message.reply({
-        content: `**FAQ Updated**\n\n**Name:** ${faqName}\n**New Content:** ${newContent}\n\n**Original Creator:** ${faq.creatorTag}\n**Last Updated By:** ${message.author.tag}\n\n⚠️ Note: This replaced the entire FAQ content`,
+        content: `**FAQ Updated**\n\n**Name:** ${faqName}\n**New Content:** ${newContent}\n\n**Original Creator:** ${faq.creatorTag}\n**Last Updated By:** ${message.author.tag}\n\nNote: This replaced the entire FAQ content`,
         allowedMentions: { parse: [] }
       });
     }

@@ -1,18 +1,21 @@
 {
   "name": "deltabotz",
   "version": "1.0.0",
-  "description": "",
+  "description": "Open-source Discord bot for moderation, logging, and server tools.",
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Bshar Esfky",
+  "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^12.4.6",
+    "better-sqlite3": "^12.6.2",
     "discord.js": "^14.25.1",
     "dotenv": "^17.2.3",
     "quick.db": "^9.1.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
   }
 }
