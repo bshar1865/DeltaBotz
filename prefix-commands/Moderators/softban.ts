@@ -7,6 +7,7 @@ import {
   } from 'discord.js';
 import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
+import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
   export default {
     name: 'softban',
     description: 'Softbans a user (bans, deletes messages, DMs an invite, then unbans).',
@@ -24,6 +25,16 @@ import configManager from '../../utils/ConfigManager';
           allowedMentions: { parse: [] }
         });
       }
+
+      const remaining = getCooldownRemaining('softban', message.author.id, message.guild?.id);
+      if (remaining > 0) {
+        const seconds = Math.ceil(remaining / 1000);
+        return message.reply({
+          content: `Please wait ${seconds}s before using this command again.`,
+          allowedMentions: { parse: [] }
+        });
+      }
+      if (message.guild) setCooldown('softban', message.author.id, 10000, message.guild.id);
   
       const userId = args[0]?.replace(/[<@!>]/g, '');
       if (!userId) {
@@ -46,7 +57,7 @@ import configManager from '../../utils/ConfigManager';
   
         const DevEmbed = new EmbedBuilder()
           .setColor('Random')
-          .setDescription('You cannot softban mods. <a:AK_KannaPiano:1370142206739877959> ');
+          .setDescription('You cannot softban mods.');
 
         if (user.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id))) {
     return message.reply({ embeds: [DevEmbed] });
@@ -78,7 +89,7 @@ import configManager from '../../utils/ConfigManager';
         const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '');
         if (logChannel && logChannel.isTextBased()) {
           (logChannel as TextChannel).send({
-            content: `<@${userId}> has been __**SOFTBANNED**__ by <@${message.author.id}> for: ${reason}`,
+            content: `Action: Softban\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
             allowedMentions: { parse: [] }
           });
         }

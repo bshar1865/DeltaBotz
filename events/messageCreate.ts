@@ -24,18 +24,9 @@ async function handleHoneypot(message: Message, config: any) {
   if (!message.inGuild() || message.author.bot || message.system) return;
 
   const guildId = message.guildId!;
-  const gdb = getGuildDB(guildId);
-
-  const honeypotChannelId =
-    config.features.honeypot.channelId ||
-    (await gdb.get<string>(`honeypot_${guildId}`)) || '';
-  const logChannelId =
-    config.logging.logChannelId ||
-    (await gdb.get<string>(`log_${guildId}`)) || '';
-  const deleteMessage =
-    config.features.honeypot.deleteMessage ??
-    (await gdb.get<boolean>(`deleteMessage_${guildId}`)) ??
-    true;
+  const honeypotChannelId = config.features.honeypot.channelId || '';
+  const logChannelId = config.logging.logChannelId || '';
+  const deleteMessage = config.features.honeypot.deleteMessage ?? true;
 
   if (honeypotChannelId && message.channel.id === honeypotChannelId && config.features.honeypot.enabled) {
     const member = message.member;

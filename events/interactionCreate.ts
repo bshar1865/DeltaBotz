@@ -439,80 +439,65 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
   }
 }
 
-function buildMainEmbed(config: ServerConfig): EmbedBuilder {
-  const modRolesDisplay = config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map((r: string) => `<@&${r}>`).join(', ') : 'None';
+function buildBaseEmbed(title: string, description?: string): EmbedBuilder {
   const embed = new EmbedBuilder()
-    .setTitle('Setup')
-    .setDescription('Use the menu below to configure the bot. Changes save instantly when you select.\nNote: Re-select roles (including previously selected) to ensure they are included.')
+    .setTitle(title)
     .setColor('#0099ff')
-    .addFields(
-      { name: 'Prefix', value: `\`${config.prefix || '.'}\``, inline: true },
-      { name: 'Logging', value: (config.logging?.enabled ? 'Enabled' : 'Disabled'), inline: true },
-      { name: 'Honeypot', value: (config.features?.honeypot?.enabled ? 'Enabled' : 'Disabled'), inline: true },
-      { name: 'Mod Commands', value: (config.permissions?.moderatorCommandsEnabled ?? true) ? 'Enabled' : 'Disabled', inline: true },
-      { name: 'Mod roles', value: modRolesDisplay, inline: false },
-    )
     .setTimestamp()
     .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+  if (description) embed.setDescription(description);
   return embed;
 }
 
+function buildMainEmbed(config: ServerConfig): EmbedBuilder {
+  const modRolesDisplay = config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map((r: string) => `<@&${r}>`).join(', ') : 'None';
+  return buildBaseEmbed(
+    'Setup',
+    'Use the menu below to configure the bot. Changes save instantly when you select.\n' +
+      'Tip: For the best experience, use Discord on PC; some buttons may not show on mobile.\n' +
+      'Note: Re-select roles (including previously selected) to ensure they are included.'
+  ).addFields(
+    { name: 'Prefix', value: `\`${config.prefix || '.'}\``, inline: true },
+    { name: 'Mod roles', value: modRolesDisplay, inline: false },
+  );
+}
+
 function buildPrefixEmbed(config: ServerConfig): EmbedBuilder {
-  return new EmbedBuilder()
-    .setTitle('Prefix Settings')
-    .setDescription(`Current prefix: \`${config.prefix || '.'}\`\n\nUse the button below to change the bot's prefix for this server.`)
-    .setColor('#0099ff')
-    .setTimestamp()
-    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+  return buildBaseEmbed(
+    'Prefix Settings',
+    `Current prefix: \`${config.prefix || '.'}\`\n\nUse the button below to change the bot's prefix for this server.`
+  );
 }
 
 function buildRoleEmbed(config: ServerConfig): EmbedBuilder {
   const modRolesDisplay = config.permissions?.moderatorRoles?.length ? config.permissions.moderatorRoles.map((r: string) => `<@&${r}>`).join(', ') : 'None';
-  return new EmbedBuilder()
-    .setTitle('Mod roles')
-    .setDescription(`${modRolesDisplay}\n\nNote: Re-select roles (including previously selected) to ensure they are included.`)
-    .setColor('#0099ff')
-    .setTimestamp()
-    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+  return buildBaseEmbed(
+    'Mod roles',
+    `${modRolesDisplay}\n\nNote: Re-select roles (including previously selected) to ensure they are included.`
+  );
 }
 
 function buildPermissionsEmbed(config: ServerConfig): EmbedBuilder {
-  return new EmbedBuilder()
-    .setTitle('Mod Commands')
-    .setDescription('Enable or disable all moderator commands for this server.')
-    .setColor('#0099ff')
-    .addFields(
-      { name: 'Status', value: (config.permissions?.moderatorCommandsEnabled ?? true) ? 'Enabled' : 'Disabled', inline: false },
-      { name: 'Note', value: 'When disabled, the bot will completely ignore all mod commands (no response). This applies to everyone, including the server owner.', inline: false },
-    )
-    .setTimestamp()
-    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+  return buildBaseEmbed('Mod Commands', 'Enable or disable all moderator commands for this server.').addFields(
+    { name: 'Status', value: (config.permissions?.moderatorCommandsEnabled ?? true) ? 'Enabled' : 'Disabled', inline: false },
+    { name: 'Note', value: 'When disabled, the bot will completely ignore all mod commands (no response). This applies to everyone, including the server owner.', inline: false },
+  );
 }
 
 function buildLoggingEmbed(config: ServerConfig): EmbedBuilder {
-  return new EmbedBuilder()
-    .setTitle('Logging')
-    .setColor('#0099ff')
-    .addFields(
-      { name: 'Enabled', value: config.logging?.enabled ? 'Yes' : 'No', inline: true },
-      { name: 'Log Channel', value: config.logging?.logChannelId ? `<#${config.logging.logChannelId}>` : 'Not set', inline: true }
-    )
-    .setTimestamp()
-    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+  return buildBaseEmbed('Logging').addFields(
+    { name: 'Enabled', value: config.logging?.enabled ? 'Yes' : 'No', inline: true },
+    { name: 'Log Channel', value: config.logging?.logChannelId ? `<#${config.logging.logChannelId}>` : 'Not set', inline: true }
+  );
 }
 
 function buildHoneypotEmbed(config: ServerConfig): EmbedBuilder {
-  return new EmbedBuilder()
-    .setTitle('Honeypot')
-    .setColor('#0099ff')
-    .addFields(
-      { name: 'Enabled', value: config.features?.honeypot?.enabled ? 'Yes' : 'No', inline: true },
-      { name: 'Channel', value: config.features?.honeypot?.channelId ? `<#${config.features.honeypot.channelId}>` : 'Not set', inline: true },
-      { name: 'Auto Unban', value: config.features?.honeypot?.autoUnban ? 'Yes' : 'No', inline: true },
-      { name: 'Delete Messages', value: config.features?.honeypot?.deleteMessage ? 'Yes' : 'No', inline: true },
-    )
-    .setTimestamp()
-    .setFooter({ text: 'Tip: For best experience, set up on Discord for PC; on mobile some buttons may not show.' });
+  return buildBaseEmbed('Honeypot').addFields(
+    { name: 'Enabled', value: config.features?.honeypot?.enabled ? 'Yes' : 'No', inline: true },
+    { name: 'Channel', value: config.features?.honeypot?.channelId ? `<#${config.features.honeypot.channelId}>` : 'Not set', inline: true },
+    { name: 'Auto Unban', value: config.features?.honeypot?.autoUnban ? 'Yes' : 'No', inline: true },
+    { name: 'Delete Messages', value: config.features?.honeypot?.deleteMessage ? 'Yes' : 'No', inline: true },
+  );
 }
 
 function buildWelcomeRoleEmbed(config: ServerConfig): EmbedBuilder {

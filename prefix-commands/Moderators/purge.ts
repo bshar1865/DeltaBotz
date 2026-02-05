@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
+import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 
 export default {
   name: 'purge',
@@ -28,6 +29,16 @@ export default {
         allowedMentions: { parse: [] }
       });
     }
+
+    const remaining = getCooldownRemaining('purge', message.author.id, message.guild?.id);
+    if (remaining > 0) {
+      const seconds = Math.ceil(remaining / 1000);
+      return message.reply({
+        content: `Please wait ${seconds}s before using this command again.`,
+        allowedMentions: { parse: [] }
+      });
+    }
+    if (message.guild) setCooldown('purge', message.author.id, 5000, message.guild.id);
 
     if (!args.length || (isNaN(Number(args[0])) && !message.mentions.users.first())) {
       return message.reply({
@@ -79,7 +90,7 @@ export default {
       }
 
       await (modlogChannel as TextChannel).send({
-        content: `<@${member.user.id}> has __**PURGED**__ ${filteredMessages.length} message(s) in ${message.channel.toString()}`,
+        content: `Action: Purge\nBy: <@${member.user.id}>\nCount: ${filteredMessages.length}\nChannel: ${message.channel.toString()}`,
         allowedMentions: { parse: [] }
       });
 

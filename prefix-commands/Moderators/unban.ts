@@ -6,6 +6,7 @@ import {
   } from 'discord.js';
 import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
+import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 
   export default {
     name: 'unban',
@@ -25,6 +26,13 @@ import configManager from '../../utils/ConfigManager';
       if (!hasRequiredRole) {
         return message.reply({ content: 'You do not have permission to use this command.' });
       }
+
+      const remaining = getCooldownRemaining('unban', message.author.id, message.guild?.id);
+      if (remaining > 0) {
+        const seconds = Math.ceil(remaining / 1000);
+        return message.reply({ content: `Please wait ${seconds}s before using this command again.` });
+      }
+      if (message.guild) setCooldown('unban', message.author.id, 10000, message.guild.id);
   
       const userId = args[0]?.replace(/[<@!>]/g, '');
       if (!userId) {
@@ -50,11 +58,10 @@ import configManager from '../../utils/ConfigManager';
           });
         }
   
-        const config = await configManager.getOrCreateConfig(message.guild!);
         const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '');
         if (logChannel?.isTextBased()) {
           await logChannel.send({
-            content: `${bannedUser.user.tag} has been __**UNBANNED**__ by <@${message.author.id}> for: ${reason}`,
+            content: `Action: Unban\nUser: ${bannedUser.user.tag}\nBy: <@${message.author.id}>\nReason: ${reason}`,
             allowedMentions: { parse: [] }
           });
         }

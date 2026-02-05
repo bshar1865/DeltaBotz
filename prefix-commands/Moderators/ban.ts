@@ -1,6 +1,7 @@
 import { Message, Client, TextChannel, EmbedBuilder, GuildMember } from 'discord.js';
 import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
+import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 
 export default {
   name: 'ban',
@@ -32,6 +33,16 @@ export default {
         allowedMentions: { parse: [] }
       });
     }
+
+    const remaining = getCooldownRemaining('ban', message.author.id, message.guild?.id);
+    if (remaining > 0) {
+      const seconds = Math.ceil(remaining / 1000);
+      return message.reply({
+        content: `Please wait ${seconds}s before using this command again.`,
+        allowedMentions: { parse: [] }
+      });
+    }
+    if (message.guild) setCooldown('ban', message.author.id, 10000, message.guild.id);
 
     const userId = args[0]?.replace(/[<@!>]/g, '');
     if (!userId) {

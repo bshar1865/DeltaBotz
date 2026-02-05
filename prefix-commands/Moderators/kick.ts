@@ -1,6 +1,7 @@
 import { EmbedBuilder, Message } from 'discord.js';
 import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
+import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 
 export default {
     name: 'kick',
@@ -18,11 +19,21 @@ export default {
     const config = await configManager.getOrCreateConfig(message.guild);
     const hasPermission = this.checkPermission(message, config);
     if (!hasPermission) {
-            return message.reply({
-                content: 'You do not have permission to use this command.',
-                allowedMentions: { parse: [] }
-            });
-        }
+      return message.reply({
+        content: 'You do not have permission to use this command.',
+        allowedMentions: { parse: [] }
+      });
+    }
+
+    const remaining = getCooldownRemaining('kick', message.author.id, message.guild?.id);
+    if (remaining > 0) {
+      const seconds = Math.ceil(remaining / 1000);
+      return message.reply({
+        content: `Please wait ${seconds}s before using this command again.`,
+        allowedMentions: { parse: [] }
+      });
+    }
+    setCooldown('kick', message.author.id, 10000, message.guild.id);
 
         const userId = args[0]?.replace(/[<@!>]/g, '');
         if (!userId) {
