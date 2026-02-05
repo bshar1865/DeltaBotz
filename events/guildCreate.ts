@@ -17,17 +17,12 @@ const event: Event = {
           .setTimestamp();
 
         // Set server icon as thumbnail
-        if (fullGuild.icon) {
-          embed.setThumbnail(fullGuild.iconURL({ size: 512 }) || '');
-        }
+        const iconUrl = fullGuild.iconURL({ size: 512, extension: 'png' }) || fullGuild.iconURL({ size: 512 });
+        if (iconUrl) embed.setThumbnail(iconUrl);
 
         // Set server banner as image if available
-        if (fullGuild.banner) {
-          const bannerUrl = fullGuild.banner.startsWith('a_')
-            ? `https://cdn.discordapp.com/banners/${fullGuild.id}/${fullGuild.banner}.gif?size=512`
-            : `https://cdn.discordapp.com/banners/${fullGuild.id}/${fullGuild.banner}.png?size=512`;
-          embed.setImage(bannerUrl);
-        }
+        const bannerUrl = fullGuild.bannerURL({ size: 1024, extension: 'png' }) || fullGuild.bannerURL({ size: 1024 });
+        if (bannerUrl) embed.setImage(bannerUrl);
 
         await logChannel.send({ embeds: [embed] });
       }

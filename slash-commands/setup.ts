@@ -50,35 +50,20 @@ const command: Command = {
         ? config.permissions.moderatorRoles.map(r => `<@&${r}>`).join(', ')
         : 'None';
 
-      const loggingChannel = config.logging.logChannelId ? `<#${config.logging.logChannelId}>` : 'Not set';
-      const autoEmbedStatus = config.features.autoEmbed?.enabled ? 'Enabled' : 'Disabled';
-      const inviteBlockStatus = config.features.inviteBlock?.enabled ? 'Enabled' : 'Disabled';
-      const welcomeStatus = config.features.welcome?.enabled ? 'Enabled' : 'Disabled';
-      const goodbyeStatus = config.features.goodbye?.enabled ? 'Enabled' : 'Disabled';
-      const roleRestoreStatus = config.features.roleRestore?.enabled ? 'Enabled' : 'Disabled';
-
       const embed = new EmbedBuilder()
         .setTitle('Setup')
         .setDescription(
           'Use the menu below to configure the bot. Changes save instantly when you select.\n' +
+          'Tip: For the best experience, use Discord on PC; some buttons may not show on mobile.\n' +
           'Note: Re-select roles (including previously selected) to ensure they are included.'
         )
         .addFields(
           { name: 'Prefix', value: `\`${config.prefix}\``, inline: true },
-          { name: 'Mod Commands', value: (config.permissions.moderatorCommandsEnabled ?? true) ? 'Enabled' : 'Disabled', inline: true },
-          { name: 'Mod roles', value: modRolesDisplay, inline: false },
-          { name: 'Logging', value: config.logging.enabled ? 'Enabled' : 'Disabled', inline: true },
-          { name: 'Log channel', value: loggingChannel, inline: true },
-          { name: 'Honeypot', value: config.features.honeypot.enabled ? 'Enabled' : 'Disabled', inline: true },
-          { name: 'Auto Embed', value: autoEmbedStatus, inline: true },
-          { name: 'Invite Block', value: inviteBlockStatus, inline: true },
-          { name: 'Welcome', value: welcomeStatus, inline: true },
-          { name: 'Goodbye', value: goodbyeStatus, inline: true },
-          { name: 'Role Restore', value: roleRestoreStatus, inline: true }
+          { name: 'Mod roles', value: modRolesDisplay, inline: false }
         )
         .setColor('#0099ff')
         .setTimestamp()
-        .setFooter({ text: 'Tip: Use /setup anytime to refresh. Desktop app shows all controls.' });
+        .setFooter({ text: 'Use /setup anytime to refresh.' });
 
       await interaction.reply({ embeds: [embed], components: [row1], flags: 64 });
     } catch (error) {

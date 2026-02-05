@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction, version as discordJsVersion } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
 import os from 'os';
 
 function formatBytes(bytes: number): string {
@@ -24,10 +24,14 @@ function formatUptime(uptime: number): string {
     return parts.join(' ');
 }
 
+function formatNumber(value: number): string {
+    return value.toLocaleString('en-US');
+}
+
 export default {
     data: new SlashCommandBuilder()
         .setName('info')
-        .setDescription('Displays detailed bot information and system stats.'),
+        .setDescription('Displays bot information and system stats.'),
 
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
@@ -38,10 +42,12 @@ export default {
         const freeMem = os.freemem();
         const usedMem = totalMem - freeMem;
         const memoryUsage = `${formatBytes(usedMem)} / ${formatBytes(totalMem)}`;
+        // Bot stats
+        const guildCount = bot.guilds.cache.size;
         
         const mainEmbed = new EmbedBuilder()
             .setTitle('DeltaBotz')
-            .setDescription('A powerful, modern Discord bot for your servers.')
+            .setDescription('perhaps useful Discord bot for your servers :)')
             .setThumbnail(bot.user?.displayAvatarURL() || null)
             .addFields(
                 { 
@@ -49,36 +55,36 @@ export default {
                     value: [
                         `**Uptime:** ${formatUptime(bot.uptime!)}`,
                         `**Latency:** ${Math.round(bot.ws.ping)}ms`,
-                        `**Memory:** ${memoryUsage}`
+                        `**RAM:** ${memoryUsage}`
                     ].join('\n'),
                     inline: true
                 },
                 {
-                    name: 'Tech',
-                    value: [
-                        `**Language:** TypeScript`,
-                        `**Runtime:** Node.js ${process.version}`,
-                        `**Discord.js:** v${discordJsVersion}`,
-                        `**Database:** better-sqlite3`
-                    ].join('\n'),
+                    name: 'Servers',
+                    value: `${formatNumber(guildCount)}`,
                     inline: true
                 },
                 {
                     name: 'Repository',
                     value: [
-                        `**Repository:** [GitHub](https://github.com/bshar1865/DeltaBotz)`
+                        `**Github:** https://github.com/bshar1865/DeltaBotz`
                     ].join('\n')
                 },
                 {
                     name: 'Credits',
                     value: [
                         '**Developer:** Delta Team',
-                        '**Hosted On:** CloudPanel Server (Thanks to @moonpower.)',
-                        '**Support:** [Star us on GitHub!](https://github.com/bshar1865/DeltaBotz)'
+                        '**Hosted On:** CloudPanel Server (Thanks to @moonpower.)'
+                    ].join('\n')
+                },
+                {
+                    name: 'Contact',
+                    value: [
+                        '**Discord:** bshar1865'
                     ].join('\n')
                 }
             )
-            .setColor('#00b3ff')
+            .setColor('Random')
             .setTimestamp()
             .setFooter({ text: 'Tip: Use /setup to configure features' });
 
