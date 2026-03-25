@@ -1,4 +1,4 @@
-import { Message, PermissionsBitField } from "discord.js";
+import { Message, PermissionsBitField, StickerFormatType } from "discord.js";
 import { ExtendedClient } from "../client";
 import { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
@@ -6,6 +6,7 @@ import { logError } from "../utils/errorLogger";
 import { getEmbeddableUrl } from "../prefix-commands/General/embed";
 import { deleteUserMessagesLastDay } from "../utils/messageDeletion";
 import idclass from "../utils/idclass";
+import { clearPendingStickerCopy, getPendingStickerCopy } from "../utils/pendingStickerCopy";
 
 const defaultPrefix = ".";
 
@@ -116,7 +117,7 @@ async function handleInviteBlock(message: Message, config: any): Promise<boolean
 
   if (isMod) return false;
 
-  const invitePattern = /(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9]+/gi;
+  const invitePattern = /(discord\.gg|discord\.com\/invite|discordapp\.com\/invite)\/[A-Za-z0-9]+/gi;
   if (!invitePattern.test(message.content)) return false;
 
   const me = message.guild!.members.me!;
@@ -138,16 +139,89 @@ async function handleInviteBlock(message: Message, config: any): Promise<boolean
   return true;
 }
 
+async function handleStickerCopy(message: Message): Promise<boolean> {
+  if (!message.inGuild() || message.author.bot || message.system) return false;
+  if (!message.stickers || message.stickers.size === 0) return false;
+
+  const pending = getPendingStickerCopy(message.author.id);
+  if (!pending) return false;
+  if (pending.guildId !== message.guildId || pending.channelId !== message.channel.id) return false;
+
+  clearPendingStickerCopy(message.author.id);
+
+  const me = message.guild!.members.me;
+  if (!me?.permissions.has(PermissionsBitField.Flags.ManageEmojisAndStickers)) {
+    await message.reply({
+      content: "I need Manage Emojis and Stickers permission to copy stickers.",
+      allowedMentions: { parse: [] }
+    });
+    return true;
+  }
+
+  const stickerItem = message.stickers.first();
+  if (!stickerItem) return false;
+
+  const fetchedSticker = await message.client.fetchSticker(stickerItem.id).catch(() => null);
+  const sticker = fetchedSticker ?? stickerItem;
+
+  if (sticker.format === StickerFormatType.Lottie) {
+    await message.reply({
+      content: "Lottie stickers cannot be copied. Please send a PNG/APNG/GIF sticker.",
+      allowedMentions: { parse: [] }
+    });
+    return true;
+  }
+
+  const baseName = (sticker.name || `sticker_${sticker.id}`).toLowerCase();
+  let name = baseName.slice(0, 30);
+  if (name.length < 2) name = `st_${sticker.id.slice(-6)}`;
+
+  if (message.guild!.stickers.cache.some(s => s.name === name)) {
+    const suffix = sticker.id.slice(-4);
+    name = `${name.slice(0, Math.max(0, 30 - (suffix.length + 1)))}_${suffix}`;
+  }
+
+  const tags = typeof sticker.tags === "string" && sticker.tags.trim().length > 0 ? sticker.tags : "🙂";
+  const description = typeof sticker.description === "string" ? sticker.description : undefined;
+
+  try {
+    const created = await message.guild!.stickers.create({
+      file: sticker.url,
+      name,
+      tags,
+      description
+    });
+
+    await message.reply({
+      content: `Sticker copied: **${created.name}**`,
+      allowedMentions: { parse: [] }
+    });
+  } catch (error) {
+    await message.reply({
+      content: "I couldn't copy that sticker. Make sure the server has sticker slots and the sticker is a supported format.",
+      allowedMentions: { parse: [] }
+    });
+  }
+
+  return true;
+}
+
 async function handleAutoEmbed(message: Message, config: any, serverPrefix: string): Promise<boolean> {
   if (!message.inGuild() || message.author.bot || message.system) return false;
   if (message.content.startsWith(serverPrefix)) return false;
   if (!config.features.autoEmbed?.enabled) return false;
 
-  const instagramUrlPattern = /https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[A-Za-z0-9_-]+/gi;
-  const instagramUrls = message.content.match(instagramUrlPattern);
+  const urlPattern = /https?:\/\/[^\s<]+/gi;
+  const rawUrls = message.content.match(urlPattern) || [];
+  const cleanedUrls = rawUrls
+    .map(u => u.replace(/[)>.,!?]+$/g, '').trim())
+    .filter(u => u.length > 0);
 
-  if (instagramUrls && instagramUrls.length > 0) {
-    for (const url of instagramUrls) {
+  const uniqueUrls = Array.from(new Set(cleanedUrls));
+
+  if (uniqueUrls.length > 0) {
+    let embedded = false;
+    for (const url of uniqueUrls) {
       try {
         const embeddableUrl = await getEmbeddableUrl(url);
 
@@ -156,17 +230,15 @@ async function handleAutoEmbed(message: Message, config: any, serverPrefix: stri
             content: `here is embed:\n${embeddableUrl}`,
             allowedMentions: { parse: [] }
           });
+          embedded = true;
         } else {
-          await message.reply({
-            content: "I cannot embed this :(",
-            allowedMentions: { parse: [] }
-          });
+          continue;
         }
       } catch {
         // Silently fail
       }
     }
-    return true;
+    return embedded;
   }
 
   return false;
@@ -270,6 +342,7 @@ export default {
       await handleHoneypot(message, config);
       const serverPrefix = config.prefix || defaultPrefix;
 
+      if (await handleStickerCopy(message)) return;
       if (await handleInviteBlock(message, config)) return;
       if (await handleAutoEmbed(message, config, serverPrefix)) return;
       if (await handleSetPrefix(message, config)) return;

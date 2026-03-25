@@ -11,9 +11,16 @@ const event: Event = {
         // Fetch full guild data to get banner
         const fullGuild = await guild.fetch().catch(() => guild);
         
+        const owner = await fullGuild.fetchOwner().catch(() => null);
+
         const embed = new EmbedBuilder()
           .setTitle(fullGuild.name)
           .setColor('#00ff00')
+          .addFields(
+            { name: 'Server ID', value: fullGuild.id, inline: true },
+            { name: 'Owner', value: owner ? `${owner.user.tag} (${owner.id})` : fullGuild.ownerId || 'Unknown', inline: true },
+            { name: 'Members', value: `${fullGuild.memberCount ?? 0}`, inline: true }
+          )
           .setTimestamp();
 
         // Set server icon as thumbnail

@@ -9,7 +9,7 @@ An open-source Discord bot focused on moderation, logging, emoji copying, honeyp
 
 - **Moderation Commands** - Ban, kick, mute, warn, purge, and more
 - **Honeypot System** - Auto-ban trap channels to catch rule-breakers
-- **Auto Embed** - Converts Instagram links to embeddable format (enabled by default)
+- **Auto Embed** - Converts supported social links to embeddable format (enabled by default)
 - **Invite Blocking** - Deletes Discord invite links (mods are exempt, disabled by default)
 - **FAQ** - Server-specific FAQ management
 - **Welcome/Goodbye Messages** - Customizable member join/leave messages
@@ -61,9 +61,9 @@ configs/
 
 **Honeypot System** - Designate a channel as a honeypot. Users who post are automatically banned. Optional auto-unban after 10 seconds. Moderators are exempt.
 
-**Auto Embed** - Detects Instagram links and converts them to embeddable format. Enabled by default.
+**Auto Embed** - Detects supported social links and converts them to embeddable format (Twitter/X, Instagram, TikTok, Reddit, Threads, Twitch, Spotify, DeviantArt, YouTube). Enabled by default.
 
-**Invite Blocking** - Deletes messages containing Discord invite links. Blocks `discord.gg/` and `discord.com/invite` formats. Moderators are exempt.
+**Invite Blocking** - Deletes messages containing Discord invite links. Blocks `discord.gg/`, `discord.com/invite`, and `discordapp.com/invite` formats. Moderators are exempt.
 
 **Role Restore** - Stores user roles when they leave and restores them when they rejoin.
 

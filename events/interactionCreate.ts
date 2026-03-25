@@ -9,12 +9,7 @@ export default {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction, client: ExtendedClient) {
     try {
-      // Check if interaction is too old (expired)
-      const interactionAge = Date.now() - interaction.createdTimestamp;
-      if (interactionAge > 3000) { // 3 seconds
-        console.log('Interaction expired, ignoring');
-        return;
-      }
+      // Do not drop interactions based on local timing; let Discord handle expiration.
       if (interaction.isChatInputCommand()) {
         const command = client.slashCommands.get(interaction.commandName);
         if (!command) return;
@@ -521,7 +516,7 @@ function buildAutoModerationEmbed(config: ServerConfig): EmbedBuilder {
       { name: 'Auto Embed', value: config.features?.autoEmbed?.enabled ? 'Enabled' : 'Disabled', inline: true },
       { name: 'Invite Block', value: config.features?.inviteBlock?.enabled ? 'Enabled' : 'Disabled', inline: true },
     )
-    .setFooter({ text: 'Auto Embed converts Instagram links to embeddable format. Invite Block deletes Discord invite links (mods are exempt).' })
+    .setFooter({ text: 'Auto Embed converts supported social links to embeddable format. Invite Block deletes Discord invites (mods are exempt).' })
     .setTimestamp();
 }
 
