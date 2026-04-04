@@ -23,14 +23,36 @@ function formatAdditionalInfo(info?: Record<string, any>): string {
     }
 }
 
-         export async function logErrorToChannel(
-         options: ErrorLogOptions,
-         client?: any,
-         guild?: Guild
-        ): Promise<void> {
+function isIgnorableError(error: Error | string): boolean {
+    const anyErr = error as any;
+    const code = anyErr?.code;
+    // Discord API error codes to ignore
+    if (
+        code === 50001 || // Missing Access
+        code === 10003 || // Unknown Channel
+        code === 50013 || // Missing Permissions
+        code === 10008 || // Unknown Message
+        code === 10062 || // Unknown Interaction
+        code === 40060 || // Interaction already acknowledged
+        code === 20028    // Rate limited
+    ) {
+        return true;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return /Missing Access|Unknown Channel|Missing Permissions|Unknown Message|Unknown Interaction|Interaction has already been acknowledged|rate limited|timeout|timed out|ETIMEDOUT/i.test(message);
+}
+
+export async function logErrorToChannel(
+    options: ErrorLogOptions,
+    client?: any,
+    guild?: Guild
+): Promise<void> {
     const { error, source = 'Unknown', additionalInfo } = options;
 
     try {
+        if (isIgnorableError(error)) return;
+
         if (!client) {
             console.error('No client provided for error logging');
             return;
