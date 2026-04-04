@@ -5,8 +5,8 @@ import configManager from "../utils/ConfigManager";
 import { logError } from "../utils/errorLogger";
 import { getEmbeddableUrl } from "../prefix-commands/General/embed";
 import { deleteUserMessagesLastDay } from "../utils/messageDeletion";
-import idclass from "../utils/idclass";
 import { clearPendingStickerCopy, getPendingStickerCopy } from "../utils/pendingStickerCopy";
+import { hasModAccess } from "../utils/permissions";
 
 const defaultPrefix = ".";
 
@@ -181,7 +181,7 @@ async function handleStickerCopy(message: Message): Promise<boolean> {
     name = `${name.slice(0, Math.max(0, 30 - (suffix.length + 1)))}_${suffix}`;
   }
 
-  const tags = typeof sticker.tags === "string" && sticker.tags.trim().length > 0 ? sticker.tags : "🙂";
+  const tags = typeof sticker.tags === "string" && sticker.tags.trim().length > 0 ? sticker.tags : "??";
   const description = typeof sticker.description === "string" ? sticker.description : undefined;
 
   try {
@@ -220,33 +220,34 @@ async function handleAutoEmbed(message: Message, config: any, serverPrefix: stri
   const uniqueUrls = Array.from(new Set(cleanedUrls));
 
   if (uniqueUrls.length > 0) {
-    let embedded = false;
+    const embedLinks: string[] = [];
     for (const url of uniqueUrls) {
       try {
         const embeddableUrl = await getEmbeddableUrl(url);
 
         if (embeddableUrl) {
-          await message.reply({
-            content: `here is embed:\n${embeddableUrl}`,
-            allowedMentions: { parse: [] }
-          });
-          embedded = true;
-        } else {
-          continue;
+          embedLinks.push(embeddableUrl);
         }
       } catch {
         // Silently fail
       }
     }
-    return embedded;
+
+    if (embedLinks.length > 0) {
+      await message.reply({
+        content: `here is embed:\n${embedLinks.join('\n')}`,
+        allowedMentions: { parse: [] }
+      });
+      return true;
+    }
   }
 
   return false;
 }
 
-async function handleSetPrefix(message: Message, config: any): Promise<boolean> {
+async function handleSetPrefix(message: Message, config: any, serverPrefix: string): Promise<boolean> {
   if (!message.inGuild()) return false;
-  if (!message.content.toLowerCase().startsWith('setprefix')) return false;
+  if (!message.content.toLowerCase().startsWith(`${serverPrefix}setprefix`)) return false;
   if (!message.member?.permissions.has('Administrator')) return false;
 
   const newPrefix = message.content.split(' ')[1];
@@ -299,12 +300,13 @@ async function handlePrefixCommand(message: Message, client: ExtendedClient, con
     }
 
     if (command.isModeratorCommand) {
-      const allModRoles = config.permissions.moderatorRoles;
-      if (
-        message.author.id !== config.permissions.ownerId &&
-        message.author.id !== idclass.ownershipID() &&
-        !message.member?.roles.cache.some((r) => allModRoles.includes(r.id))
-      ) {
+      const hasPermission = hasModAccess(
+        message.member,
+        message.author.id,
+        config,
+        (command as any).requiredUserPermissions
+      );
+      if (!hasPermission) {
         return message.reply({
           content: "You don't have permission to use this command.",
           allowedMentions: { parse: [] },
@@ -345,10 +347,17 @@ export default {
       if (await handleStickerCopy(message)) return;
       if (await handleInviteBlock(message, config)) return;
       if (await handleAutoEmbed(message, config, serverPrefix)) return;
-      if (await handleSetPrefix(message, config)) return;
+      if (await handleSetPrefix(message, config, serverPrefix)) return;
 
       await handlePrefixCommand(message, client, config, serverPrefix);
     }
   },
 };
+
+
+
+
+
+
+
 

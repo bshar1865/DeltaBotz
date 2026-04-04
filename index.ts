@@ -6,6 +6,13 @@ import { loadSlashCommands } from './loaders/loadSlashCommands';
 import { registerSlashCommands } from './registerSlashCommands';
 import { logError } from './utils/errorLogger';
 
+function isTimeoutError(error: any): boolean {
+    const text = error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
+    return /timeout|timed out|ETIMEDOUT|RequestTimeout/i.test(text);
+}
+
 async function init() {
     try {
         console.log('Initializing DeltaBotz...');
@@ -28,11 +35,13 @@ async function init() {
 
 process.on('unhandledRejection', async (error: any) => {
     console.error('Unhandled promise rejection:', error);
+    if (isTimeoutError(error)) return;
     try { await logError(error instanceof Error ? error : String(error), 'unhandledRejection', undefined, client as any); } catch {}
 });
 
 process.on('uncaughtException', async (error: any) => {
     console.error('Uncaught exception:', error);
+    if (isTimeoutError(error)) return;
     try { await logError(error instanceof Error ? error : String(error), 'uncaughtException', undefined, client as any); } catch {}
     process.exit(1);
 });

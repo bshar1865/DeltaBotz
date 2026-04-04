@@ -1,21 +1,23 @@
-import { Message, Client, User } from 'discord.js';
-import idclass from '../../utils/idclass';
+import { Message, Client, User, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
+import { hasModAccess } from '../../utils/permissions';
+
 export default {
   name: 'botdm',
+  description: 'Sends a direct message to a mentioned user using the bot.',
+  requiredUserPermissions: [PermissionFlagsBits.ManageMessages],
   requiredRoles: [],
 
   async execute(message: Message, args: string[], _client: Client) {
     const config = await configManager.getOrCreateConfig(message.guild!);
-    const requiredRoles: string[] = config.permissions.moderatorRoles || [];
-
-    // Owner bypass
-    const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
-    const hasRequiredRole = isOwner || message.member?.roles.cache.some(role =>
-      requiredRoles.includes(role.id)
+    const hasPermission = hasModAccess(
+      message.member,
+      message.author.id,
+      config,
+      [PermissionFlagsBits.ManageMessages]
     );
 
-    if (!hasRequiredRole) {
+    if (!hasPermission) {
       return message.reply('You do not have permission to use this command.');
     }
 

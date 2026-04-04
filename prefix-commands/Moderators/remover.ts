@@ -3,8 +3,8 @@ import configManager from '../../utils/ConfigManager';
 import { hasModAccess } from '../../utils/permissions';
 
 export default {
-  name: 'giver',
-  description: 'Gives specified roles to a mentioned user or by user ID.',
+  name: 'remover',
+  description: 'Removes specified roles from a mentioned user or by user ID.',
   requiredUserPermissions: [PermissionFlagsBits.ManageRoles],
 
   async execute(message: Message, args: string[]) {
@@ -27,7 +27,7 @@ export default {
 
     if (args.length < 2) {
       return message.reply({
-        content: 'Usage: `giver <@user|userID> <roleID1> [roleID2 ...]`',
+        content: 'Usage: `remover <@user|userID> <roleID1> [roleID2 ...]`',
         allowedMentions: { parse: [] }
       });
     }
@@ -63,22 +63,22 @@ export default {
 
     try {
       if (validRoles.length > 0) {
-        await targetMember.roles.add(validRoles.map(r => r.id));
+        await targetMember.roles.remove(validRoles.map(r => r.id));
         await message.reply({
-          content: `Added roles to <@${targetMember.id}>: ${validRoles.map(r => r.name).join(', ')}`,
+          content: `Removed roles from <@${targetMember.id}>: ${validRoles.map(r => r.name).join(', ')}`,
           allowedMentions: { parse: [] }
         });
 
         const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '');
         if (logChannel?.isTextBased()) {
           logChannel.send({
-            content: `Action: Give Role\nUser: <@${targetMember.id}>\nBy: <@${message.author.id}>\nRoles: ${validRoles.map(r => r.name).join(', ')}`,
+            content: `Action: Remove Role\nUser: <@${targetMember.id}>\nBy: <@${message.author.id}>\nRoles: ${validRoles.map(r => r.name).join(', ')}`,
             allowedMentions: { parse: [] }
           });
         }
       } else {
         await message.reply({
-          content: 'No valid roles to add.',
+          content: 'No valid roles to remove.',
           allowedMentions: { parse: [] }
         });
       }
@@ -92,14 +92,14 @@ export default {
     } catch (err) {
       console.error(err);
       await message.reply({
-        content: 'An error occurred while assigning roles.',
+        content: 'An error occurred while removing roles.',
         allowedMentions: { parse: [] }
       });
 
       const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '');
       if (logChannel?.isTextBased()) {
         logChannel.send({
-          content: `Action: Give Role (Error)\nUser: <@${targetMember.id}>\nBy: <@${message.author.id}>`,
+          content: `Action: Remove Role (Error)\nUser: <@${targetMember.id}>\nBy: <@${message.author.id}>`,
           allowedMentions: { parse: [] }
         });
       }

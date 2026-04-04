@@ -1,36 +1,43 @@
-import {
-  ChatInputCommandInteraction,
-  Message,
-  TextChannel,
-  GuildMember,
-  ChannelType,
-  User
-} from 'discord.js';
-import idclass from '../../utils/idclass';
+import { Message, GuildMember, TextChannel, ChannelType, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
+import { hasModAccess } from '../../utils/permissions';
 
 export default {
   name: 'purge',
-  description: 'Deletes up to 100 messages from the channel. Supports user-specific purging.',
-  usage: '.purge <number> or .purge @User <number>',
+  description: 'Deletes a number of messages in the current channel.',
+  requiredUserPermissions: [PermissionFlagsBits.ManageMessages],
 
-  execute: async (message: Message, args: string[]) => {
+  async execute(message: Message, args: string[]) {
+    if (!message.guild) return;
+
     const member = message.member as GuildMember;
-    const config = await configManager.getOrCreateConfig(message.guild!);
+    const config = await configManager.getOrCreateConfig(message.guild);
+    const channel = message.channel;
+    const me = message.guild.members.me;
 
-    // Owner bypass
-    const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
-    const hasRequiredRole = isOwner || member.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id));
-    
-    if (!hasRequiredRole) {
+    if (channel.isTextBased() && !me?.permissionsIn(channel as any).has(PermissionFlagsBits.ManageMessages)) {
+      return message.reply({
+        content: 'I need Manage Messages permission to do that.',
+        allowedMentions: { parse: [] }
+      });
+    }
+
+    const hasPermission = hasModAccess(
+      member,
+      message.author.id,
+      config,
+      [PermissionFlagsBits.ManageMessages]
+    );
+
+    if (!hasPermission) {
       return message.reply({
         content: 'You do not have permission to use this command.',
         allowedMentions: { parse: [] }
       });
     }
 
-    const remaining = getCooldownRemaining('purge', message.author.id, message.guild?.id);
+    const remaining = getCooldownRemaining('purge', message.author.id, message.guild.id);
     if (remaining > 0) {
       const seconds = Math.ceil(remaining / 1000);
       return message.reply({
@@ -38,68 +45,41 @@ export default {
         allowedMentions: { parse: [] }
       });
     }
-    if (message.guild) setCooldown('purge', message.author.id, 5000, message.guild.id);
+    setCooldown('purge', message.author.id, 5000, message.guild.id);
 
-    if (!args.length || (isNaN(Number(args[0])) && !message.mentions.users.first())) {
+    const amount = parseInt(args[0]);
+    if (isNaN(amount) || amount < 1 || amount > 100) {
       return message.reply({
-        content: 'Invalid usage. Use `.purge <number>` or `.purge @User <number>`.',
-        allowedMentions: { parse: [] }
-      });
-    }
-
-    const targetUser: User | undefined = message.mentions.users.first();
-    const messageLimit: number = targetUser ? parseInt(args[1]) : parseInt(args[0]);
-
-    if (!messageLimit || messageLimit < 1 || messageLimit > 100) {
-      return message.reply({
-        content: 'Please specify a number between 1 and 100.',
+        content: 'Please provide a number between 1 and 100 for the amount of messages to delete.',
         allowedMentions: { parse: [] }
       });
     }
 
     try {
-      const messages = await message.channel.messages.fetch({ limit: 100 });
-      const currentTime = Date.now();
-      const maxAge = 14 * 24 * 60 * 60 * 1000; // 14 days in ms
-
-      const filteredMessages = Array.from(
-        messages
-          .filter(msg =>
-            (targetUser ? msg.author.id === targetUser.id : true) &&
-            (currentTime - msg.createdTimestamp < maxAge)
-          )
-          .values()
-      ).slice(0, messageLimit + 1); // +1 just in case
-
-      if (message.channel.type === ChannelType.GuildText || message.channel.type === ChannelType.GuildAnnouncement) {
-        await (message.channel as TextChannel).bulkDelete(filteredMessages, true);
-      } else {
-        return message.reply("This command can only be used in a text channel.");
-      }
-      
-      const modlogChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '');
-      if (
-        !modlogChannel ||
-        modlogChannel.type !== ChannelType.GuildText
-      ) {
-        console.error('Modlog channel is invalid or not found.');
-        return message.reply({
-          content: 'Modlog channel not configured or invalid.',
+      if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement) {
+        const deleted = await channel.bulkDelete(amount, true);
+        await channel.send({
+          content: `Deleted ${deleted.size} messages.`,
           allowedMentions: { parse: [] }
-        });
+        }).catch(() => {});
       }
 
-      await (modlogChannel as TextChannel).send({
-        content: `Action: Purge\nBy: <@${member.user.id}>\nCount: ${filteredMessages.length}\nChannel: ${message.channel.toString()}`,
-        allowedMentions: { parse: [] }
-      });
-
-    } catch (err) {
-      console.error('Error while purging messages:', err);
-      return message.reply({
-        content: 'Failed to delete messages. Make sure messages are under 14 days old.',
-        allowedMentions: { parse: [] }
-      });
+      const modlogChannel = message.guild.channels.cache.get(config.logging.logChannelId || '') as TextChannel;
+      if (modlogChannel && modlogChannel.type === ChannelType.GuildText) {
+        modlogChannel.send({
+          content: `Action: Purge\nBy: <@${message.author.id}>\nAmount: ${amount}\nChannel: <#${message.channel.id}>`,
+          allowedMentions: { parse: [] }
+        }).catch(() => {});
+      }
+    } catch (error) {
+      console.error(error);
+      if (channel.isTextBased() && "send" in channel) {
+        (channel as any).send({
+          content: 'I was unable to delete messages. Make sure I have the right permissions.',
+          allowedMentions: { parse: [] }
+        }).catch(() => {});
+      }
     }
   }
 };
+

@@ -3,14 +3,18 @@ import {
     ButtonInteraction, 
     SlashCommandBuilder, 
     ChatInputCommandInteraction,
-    SlashCommandSubcommandsOnlyBuilder
+    SlashCommandSubcommandsOnlyBuilder,
+    PermissionResolvable
 } from 'discord.js';
 
 export interface Command {
+    name?: string;
+    description?: string;
     data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
     execute: (...args: any[]) => Promise<void>;
     buttonHandler?: (interaction: ButtonInteraction) => Promise<void>;
     isModeratorCommand?: boolean;
+    requiredUserPermissions?: PermissionResolvable[];
 }
 
 export interface Event {

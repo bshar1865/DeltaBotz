@@ -1,26 +1,28 @@
-import { Message, Client, TextChannel } from 'discord.js';
-import idclass from '../../utils/idclass';
+import { Message, Client, TextChannel, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
+import { hasModAccess } from '../../utils/permissions';
 
 export default {
   name: 'cmd',
   description: 'Repeats a message.',
+  requiredUserPermissions: [PermissionFlagsBits.ManageMessages],
   requiredRoles: [],
 
   async execute(message: Message, args: string[], client: Client) {
     const config = await configManager.getOrCreateConfig(message.guild!);
-    const requiredRoles: string[] = config.permissions.moderatorRoles || [];
+    const hasPermission = hasModAccess(
+      message.member,
+      message.author.id,
+      config,
+      [PermissionFlagsBits.ManageMessages]
+    );
 
-    // Owner bypass
-    const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
-    const hasRequiredRole = isOwner || message.member?.roles.cache.some(role => requiredRoles.includes(role.id));
-
-    if (!hasRequiredRole) {
+    if (!hasPermission) {
       return message.reply({ content: 'You do not have permission to use this command.' });
     }
 
     const input = message.content.trim();
-    const matches = input.match(/[\.\?](\w+)/g);
+    const matches = input.match(/[\.?](\w+)/g);
 
     if (matches && matches.length > 1 && matches[0] === matches[1]) {
       return message.reply("You can't run the same command inside itself.");

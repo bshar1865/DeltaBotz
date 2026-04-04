@@ -1,11 +1,13 @@
-import { EmbedBuilder, Message } from "discord.js";
+import { EmbedBuilder, Message, PermissionResolvable } from "discord.js";
 import configManager from "../../utils/ConfigManager";
 import { ExtendedClient } from "../../client";
+import { hasAnyPermission, hasModAccess, isAdmin } from "../../utils/permissions";
 
 type PrefixCommand = {
   name: string;
   description?: string;
   isModeratorCommand?: boolean;
+  requiredUserPermissions?: PermissionResolvable[];
 };
 
 function buildFieldValues(lines: string[], maxLen = 1024): string[] {
@@ -39,16 +41,32 @@ export default {
     });
 
     let prefix = ".";
-    if (message.guild) {
-      const config = await configManager.getOrCreateConfig(message.guild);
-      prefix = config.prefix || prefix;
-    }
+    const config = message.guild ? await configManager.getOrCreateConfig(message.guild) : null;
+    if (config?.prefix) prefix = config.prefix;
+
+    const member = message.member;
+
+    const canUseGeneral = (cmd: PrefixCommand): boolean => {
+      if (!cmd.requiredUserPermissions || cmd.requiredUserPermissions.length === 0) return true;
+      if (!member) return false;
+      return isAdmin(member) || hasAnyPermission(member, cmd.requiredUserPermissions);
+    };
+
+    const canUseMod = (cmd: PrefixCommand): boolean => {
+      if (!cmd.isModeratorCommand) return false;
+      if (!message.guild || !config || !member) return false;
+      if (config.permissions?.moderatorCommandsEnabled === false) return false;
+      return hasModAccess(member, message.author.id, config, cmd.requiredUserPermissions);
+    };
 
     const generalCommands = allCommands
       .filter(c => !c.isModeratorCommand)
+      .filter(canUseGeneral)
       .sort((a, b) => a.name.localeCompare(b.name));
+
     const moderatorCommands = allCommands
       .filter(c => c.isModeratorCommand)
+      .filter(canUseMod)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const format = (c: PrefixCommand) =>
@@ -59,7 +77,7 @@ export default {
 
     const embed = new EmbedBuilder()
       .setTitle("Help")
-      .setDescription(`Prefix: \`${prefix}\``)
+      .setDescription(`Prefix: \`${prefix}\`\nShowing commands you can use.`)
       .setColor("Random");
 
     const generalFields = buildFieldValues(generalLines);
@@ -88,3 +106,4 @@ export default {
     });
   },
 };
+

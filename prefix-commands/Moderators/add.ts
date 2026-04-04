@@ -2,28 +2,30 @@ import {
     Message,
     TextChannel,
     GuildMember,
-    ChannelType
+    ChannelType,
+    PermissionFlagsBits
 } from 'discord.js';
-import idclass from '../../utils/idclass';
 import configManager from '../../utils/ConfigManager';
+import { hasModAccess } from '../../utils/permissions';
+
 export default {
     name: 'add',
     description: 'Gives a user access to the current channel.',
-    
+    requiredUserPermissions: [PermissionFlagsBits.ManageChannels],
     requiredRoles: [],
 
     async execute(message: Message, args: string[]) {
         if (!message.guild || !message.member) return;
 
         const guildConfig = await configManager.getOrCreateConfig(message.guild);
-        
-        // Owner bypass
-        const isOwner = message.author.id === guildConfig.permissions.ownerId || message.author.id === idclass.ownershipID();
-        const hasRequiredRole = isOwner || message.member.roles.cache.some(role =>
-            (guildConfig.permissions.moderatorRoles || []).includes(role.id)
+        const hasPermission = hasModAccess(
+            message.member,
+            message.author.id,
+            guildConfig,
+            [PermissionFlagsBits.ManageChannels]
         );
 
-        if (!hasRequiredRole) {
+        if (!hasPermission) {
             await message.reply({
                 content: 'You do not have permission to use this command.',
                 allowedMentions: { parse: [] }
@@ -43,6 +45,15 @@ export default {
         if (message.channel.type !== ChannelType.GuildText) return;
 
         const channel = message.channel as TextChannel;
+
+        const me = message.guild.members.me;
+        if (!me?.permissionsIn(channel).has(PermissionFlagsBits.ManageChannels)) {
+            await channel.send({
+                content: 'I need Manage Channels permission to do that.',
+                allowedMentions: { parse: [] }
+            });
+            return;
+        }
         const restrictedCategories: string[] = [];
         const isRestricted = restrictedCategories.includes(channel.parentId ?? '');
 
@@ -81,3 +92,4 @@ export default {
         }
     }
 };
+

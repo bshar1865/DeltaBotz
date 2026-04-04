@@ -1,30 +1,36 @@
-import {
-  Message,
-  PermissionsBitField,
-  EmbedBuilder,
-  TextChannel,
-  ChannelType,
-} from 'discord.js';
-import idclass from '../../utils/idclass';
+import { EmbedBuilder, Message, PermissionFlagsBits, TextChannel } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
+import { hasModAccess } from '../../utils/permissions';
 
 export default {
   name: 'mute',
-  description: 'Times out a user for a specified duration or removes the timeout if no duration is provided.',
+  description: 'Times out a user for a specified duration.',
+  requiredUserPermissions: [PermissionFlagsBits.ModerateMembers],
+
   async execute(message: Message, args: string[]) {
     if (!message.guild) return;
 
     const config = await configManager.getOrCreateConfig(message.guild);
-    const requiredRoles = config.permissions.moderatorRoles || [];
-
-    const isOwner = message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID();
-    const hasRequiredRole = isOwner || message.member?.roles.cache.some(role =>
-      requiredRoles.includes(role.id)
+    const me = message.guild.members.me;
+    if (!me?.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return message.reply({
+        content: 'I need Moderate Members permission to do that.',
+        allowedMentions: { parse: [] }
+      });
+    }
+    const hasPermission = hasModAccess(
+      message.member,
+      message.author.id,
+      config,
+      [PermissionFlagsBits.ModerateMembers]
     );
 
-    if (!hasRequiredRole) {
-      return message.reply('You do not have permission to use this command.');
+    if (!hasPermission) {
+      return message.reply({
+        content: 'You do not have permission to use this command.',
+        allowedMentions: { parse: [] }
+      });
     }
 
     const remaining = getCooldownRemaining('mute', message.author.id, message.guild.id);
@@ -37,103 +43,91 @@ export default {
     }
     setCooldown('mute', message.author.id, 10000, message.guild.id);
 
-    const member = message.mentions.members?.first();
-    if (!member) {
-      return message.reply('Please mention a user to timeout or untimeout.');
-    }
-
-    const protectedRoles = requiredRoles;
-    if (member.roles.cache.some(role => protectedRoles.includes(role.id))) {
+    const userId = args[0]?.replace(/[<@!>]/g, '');
+    if (!userId) {
       const embed = new EmbedBuilder()
         .setColor('Random')
-        .setDescription('You cannot mute mods.');
+        .setDescription('Please provide a user ID or mention to mute.');
       return message.reply({ embeds: [embed] });
     }
 
     const duration = args[1];
+    if (!duration) {
+      const embed = new EmbedBuilder()
+        .setColor('Random')
+        .setDescription('Please provide a duration (e.g., 10s, 5m, 2h, 1d).');
+      return message.reply({ embeds: [embed] });
+    }
+
     const reason = args.slice(2).join(' ') || 'No reason provided';
-    const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '') as TextChannel;
+
+    const match = duration.match(/^(\d+)(s|m|h|d)$/);
+    if (!match) {
+      const embed = new EmbedBuilder()
+        .setColor('Random')
+        .setDescription('Invalid duration format. Use s, m, h, or d (e.g., 10s, 5m, 2h, 1d).');
+      return message.reply({ embeds: [embed] });
+    }
+
+    const amount = parseInt(match[1]);
+    const unit = match[2];
+    const durationMs = unit === 's' ? amount * 1000 : unit === 'm' ? amount * 60000 : unit === 'h' ? amount * 3600000 : amount * 86400000;
 
     try {
-      if (duration) {
-        const durationMs = parseDuration(duration);
-        if (durationMs === null) {
-          return message.reply('Invalid duration format. Use formats like `10m`, `1h`, `1d`.');
-        }
+      const member = await message.guild.members.fetch(userId).catch(() => null);
 
-        await member.timeout(durationMs, reason);
-        await message.reply({
-          content: `<@${member.id}> has been __**MUTED**__`,
-          allowedMentions: { parse: [] },
-        });
-
-        try {
-          await member.send(
-            `You have been __**MUTED**__ in **${message.guild?.name}** for **${duration}** due to: **${reason}**`
-          );
-        } catch {
-          if (logChannel?.type === ChannelType.GuildText) {
-            await logChannel.send({
-              content: `Could not send DM to <@${member.id}> about the mute.`,
-              allowedMentions: { parse: [] },
-            });
-          }
-        }
-
-        if (logChannel?.type === ChannelType.GuildText) {
-          await logChannel.send({
-            content: `Action: Mute\nUser: <@${member.id}>\nBy: <@${message.author.id}>\nDuration: ${duration}\nReason: ${reason}`,
-            allowedMentions: { parse: [] },
-          });
-        }
-
-        setTimeout(async () => {
-          try {
-            await member.send(`Your mute in **${message.guild?.name}** has ended.`);
-          } catch {
-            if (logChannel?.type === ChannelType.GuildText) {
-              await logChannel.send({
-                content: `Could not send DM to <@${member.id}> after the mute ended.`,
-                allowedMentions: { parse: [] },
-              });
-            }
-          }
-        }, durationMs);
-      } else {
-        await member.timeout(null, reason);
-        await message.reply({
-          content: `<@${member.id}> has been __**UNMUTED**__`,
-          allowedMentions: { parse: [] },
-        });
-
-        if (logChannel?.type === ChannelType.GuildText) {
-          await logChannel.send({
-            content: `Action: Unmute\nUser: <@${member.id}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
-            allowedMentions: { parse: [] },
-          });
-        }
+      if (!member) {
+        const embed = new EmbedBuilder()
+          .setColor('Random')
+          .setDescription('Could not find the specified user in this server.');
+        return message.reply({ embeds: [embed] });
       }
-    } catch (err) {
-      console.error(err);
-      message.reply('An error occurred while trying to mute or unmute the user.');
-    }
-  },
-};
-  
-  function parseDuration(duration: string): number | null {
-    const regex = /^(\d+)([smhd])$/;
-    const match = duration.match(regex);
-    if (!match) return null;
-  
-    const value = parseInt(match[1]);
-    const unit = match[2];
-  
-    switch (unit) {
-      case 's': return value * 1000;
-      case 'm': return value * 60 * 1000;
-      case 'h': return value * 60 * 60 * 1000;
-      case 'd': return value * 24 * 60 * 60 * 1000;
-      default: return null;
+
+      if (member.roles.cache.some(role => (config.permissions.moderatorRoles || []).includes(role.id))) {
+        const embed = new EmbedBuilder()
+          .setColor('Random')
+          .setDescription('You cannot mute mods <a:AK_KannaPiano:1370142206739877959> ');
+        return message.reply({ embeds: [embed] });
+      }
+
+      await member.timeout(durationMs, reason);
+
+      const embed = new EmbedBuilder()
+        .setColor('Random')
+        .setDescription(`Muted <@${userId}> for **${duration}** due to: **${reason}**`);
+      await message.reply({ embeds: [embed] });
+
+      const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '') as TextChannel;
+      if (logChannel?.type === 0) {
+        logChannel.send({
+          content: `Action: Mute\nUser: <@${userId}>\nBy: <@${message.author.id}>\nDuration: ${duration}\nReason: ${reason}`,
+          allowedMentions: { parse: [] }
+        });
+      }
+
+      try {
+        await member.send(`You have been __**MUTED**__ in **${message.guild?.name}** for **${duration}** due to: **${reason}**`);
+      } catch {}
+
+      setTimeout(async () => {
+        try {
+          await member.send(`Your mute in **${message.guild?.name}** has ended.`);
+        } catch {}
+        if (logChannel?.type === 0) {
+          logChannel.send({
+            content: `Action: Unmute\nUser: <@${userId}>\nBy: <@${message.author.id}>`,
+            allowedMentions: { parse: [] }
+          }).catch(() => {});
+        }
+      }, durationMs);
+
+    } catch (error) {
+      console.error(error);
+      const embed = new EmbedBuilder()
+        .setColor('Random')
+        .setDescription('I was unable to mute this user. Make sure I have permission and the user is valid.');
+      message.reply({ embeds: [embed] });
     }
   }
-  
+};
+

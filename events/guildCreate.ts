@@ -6,7 +6,7 @@ const event: Event = {
   name: Events.GuildCreate,
   async execute(guild: Guild, client: Client) {
     try {
-      const logChannel = await client.channels.fetch(idclass.channelErrorLogs()).catch(() => null);
+      const logChannel = await client.channels.fetch(idclass.channelGuildLogs()).catch(() => null);
       if (logChannel && (logChannel instanceof TextChannel || logChannel instanceof DMChannel || logChannel instanceof NewsChannel)) {
         // Fetch full guild data to get banner
         const fullGuild = await guild.fetch().catch(() => guild);
@@ -40,4 +40,3 @@ const event: Event = {
 };
 
 export default event;
-

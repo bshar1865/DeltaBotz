@@ -480,7 +480,7 @@ function buildPermissionsEmbed(config: ServerConfig): EmbedBuilder {
 }
 
 function buildLoggingEmbed(config: ServerConfig): EmbedBuilder {
-  return buildBaseEmbed('Logging').addFields(
+  return buildBaseEmbed('Logging', 'Make sure the bot has access to the selected channel to log.').addFields(
     { name: 'Enabled', value: config.logging?.enabled ? 'Yes' : 'No', inline: true },
     { name: 'Log Channel', value: config.logging?.logChannelId ? `<#${config.logging.logChannelId}>` : 'Not set', inline: true }
   );
@@ -629,3 +629,4 @@ function buildAutoModerationRows(includeBack?: boolean) {
   if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
   return rows;
 }
+

@@ -3,9 +3,11 @@ import {
   ChatInputCommandInteraction,
   Guild,
   TextChannel,
-  GuildMember
+  GuildMember,
+  PermissionFlagsBits
 } from 'discord.js';
 import configManager from '../utils/ConfigManager';
+import { hasModAccess } from '../utils/permissions';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -77,10 +79,11 @@ async function addEmojisWithPause(guild: Guild, emojiData: string[], interaction
     } catch (error: any) {
       failed++;
 
-      if (
+      if (error.code === 50013) {
+        logLines.push('Missing permissions to add emojis in this server.');
+      } else if (
         error.message?.includes("rate limited") ||
-        error.code === 20028 || // Rate limit
-        error.code === 50013    // Missing permissions
+        error.code === 20028 // Rate limit
       ) {
         logLines.push(`Rate limit hit. Pausing for 15 minutes...`);
         await interaction.followUp({
@@ -133,8 +136,12 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const member = interaction.member as GuildMember;
   const config = await configManager.getOrCreateConfig(interaction.guild!);
-  const modRoles = config.permissions.moderatorRoles || [];
-  const hasPermission = modRoles.some((roleId: string) => member.roles.cache.has(roleId));
+  const hasPermission = hasModAccess(
+    member,
+    interaction.user.id,
+    config,
+    [PermissionFlagsBits.ManageEmojisAndStickers]
+  );
 
   if (!hasPermission) {
     return interaction.reply({
@@ -201,3 +208,4 @@ export default {
   data,
   execute
 };
+

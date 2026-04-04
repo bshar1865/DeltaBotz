@@ -1,5 +1,6 @@
-import { Message, Client, TextChannel } from 'discord.js';
+import { Message, Client, TextChannel, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
+import { hasModAccess } from '../../utils/permissions';
 import { getGuildDB } from '../../utils/db';
 
 interface FAQEntry {
@@ -302,4 +303,5 @@ export default {
     });
   }
 };
+
 

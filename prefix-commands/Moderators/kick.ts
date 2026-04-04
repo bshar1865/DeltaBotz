@@ -1,23 +1,31 @@
-import { EmbedBuilder, Message } from 'discord.js';
-import idclass from '../../utils/idclass';
+import { EmbedBuilder, Message, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
+import { hasModAccess } from '../../utils/permissions';
 
 export default {
-    name: 'kick',
-    description: 'Kicks a user from the server.',
-
-  checkPermission(message: Message, config: any): boolean {
-    if (message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID()) return true;
-    const allModRoles = config.permissions.moderatorRoles;
-    return message.member?.roles.cache.some(role => allModRoles.includes(role.id)) || false;
-  },
+  name: 'kick',
+  description: 'Kicks a user from the server.',
+  requiredUserPermissions: [PermissionFlagsBits.KickMembers],
 
   async execute(message: Message, args: string[]) {
     if (!message.guild) return;
 
     const config = await configManager.getOrCreateConfig(message.guild);
-    const hasPermission = this.checkPermission(message, config);
+    const me = message.guild.members.me;
+    if (!me?.permissions.has(PermissionFlagsBits.KickMembers)) {
+      return message.reply({
+        content: 'I need Kick Members permission to do that.',
+        allowedMentions: { parse: [] }
+      });
+    }
+    const hasPermission = hasModAccess(
+      message.member,
+      message.author.id,
+      config,
+      [PermissionFlagsBits.KickMembers]
+    );
+
     if (!hasPermission) {
       return message.reply({
         content: 'You do not have permission to use this command.',
@@ -33,77 +41,63 @@ export default {
         allowedMentions: { parse: [] }
       });
     }
-    setCooldown('kick', message.author.id, 10000, message.guild.id);
+    if (message.guild) setCooldown('kick', message.author.id, 10000, message.guild.id);
 
-        const userId = args[0]?.replace(/[<@!>]/g, '');
-        if (!userId) {
-            return message.reply({
-                content: 'Please provide a user mention or ID to kick.',
-                allowedMentions: { parse: [] }
-            });
-        }
+    const userId = args[0]?.replace(/[<@!>]/g, '');
+    if (!userId) {
+      return message.reply({
+        content: 'Please provide a user ID or mention to kick.',
+        allowedMentions: { parse: [] }
+      });
+    }
 
-        const reason = args.slice(1).join(' ') || 'No reason provided';
+    const reason = args.slice(1).join(' ') || 'No reason provided';
 
-        try {
+    try {
       const member = await message.guild.members.fetch(userId).catch(() => null);
+
       if (!member) {
-                return message.reply({
-                    content: 'Could not find this user in the server.',
-                    allowedMentions: { parse: [] }
-                });
-            }
+        return message.reply({
+          content: 'Could not find the specified user in this server.',
+          allowedMentions: { parse: [] }
+        });
+      }
 
-      if (member.roles.cache.some(r => (config.permissions.moderatorRoles || []).includes(r.id))) {
-                const embed = new EmbedBuilder()
-                    .setColor('Random')
-          .setDescription('You cannot kick mods.');
-                return message.reply({ embeds: [embed] });
-            }
+      if (member.roles.cache.some(role => (config.permissions.moderatorRoles || []).includes(role.id))) {
+        const embed = new EmbedBuilder()
+          .setColor('Random')
+          .setDescription('You cannot kick mods <a:AK_KannaPiano:1370142206739877959> ');
+        return message.reply({ embeds: [embed] });
+      }
 
-      if (!member.kickable) {
-                return message.reply({
-                    content: 'I cannot kick this user. They might have a higher role or permissions.',
-                    allowedMentions: { parse: [] }
-                });
-            }
-
-            try {
+      try {
         await member.send(`You have been __**KICKED**__ from **${message.guild.name}** for the following reason: ${reason}`);
-            } catch {
-        const logChannelId = config.logging.logChannelId || '';
-        const logChannel = message.guild.channels.cache.get(logChannelId);
-                if (logChannel?.isTextBased()) {
-                    logChannel.send({
-                        content: `Could not send DM to <@${userId}> before kick.`,
-                        allowedMentions: { parse: [] }
-                    });
-                }
-            }
+      } catch {}
 
       await member.kick(reason);
-      if ('send' in message.channel) {
-            await message.channel.send({
-          content: `<@${userId}> has been __**KICKED**__.`,
-                allowedMentions: { parse: [] }
-            });
-      }
+
+      await message.reply({
+        content: `<@${userId}> has been __**KICKED**__`,
+        allowedMentions: { parse: [] }
+      });
 
       const logChannelId = config.logging.logChannelId || '';
       const logChannel = message.guild.channels.cache.get(logChannelId);
-      if (logChannel?.isTextBased() && config.logging.events.kick) {
-                logChannel.send({
+      if (logChannel && logChannel.isTextBased()) {
+        logChannel.send({
           content: `Action: Kick\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
-                    allowedMentions: { parse: [] }
-                });
-            }
+          allowedMentions: { parse: [] }
+        });
+      }
 
-        } catch (error) {
-            console.error(error);
-            return message.reply({
-                content: 'I was unable to kick the user. Please check if the ID is correct and I have the necessary permissions.',
-                allowedMentions: { parse: [] }
-            });
-        }
+    } catch (error) {
+      console.error(error);
+      message.reply({
+        content: 'I was unable to kick user. Please check if the ID is correct or if user is still in the server.',
+        allowedMentions: { parse: [] }
+      });
     }
+  }
 };
+
+

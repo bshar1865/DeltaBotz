@@ -1,8 +1,8 @@
-import { Message, MessageCollector, TextChannel, DMChannel, NewsChannel } from 'discord.js';
-import idclass from '../../utils/idclass';
+import { Message, MessageCollector, TextChannel, DMChannel, NewsChannel, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getGuildDB } from '../../utils/db';
 import { ExtendedClient } from '../../client';
+import { hasModAccess } from '../../utils/permissions';
 
 interface TempCommand {
   name: string;
@@ -18,17 +18,10 @@ const activeCollectors = new Map<string, MessageCollector>();
 export default {
   name: 'tc',
   description: 'Create and manage temporary commands. Use `.tc` to create, `.tc remove <name>` to remove, `.tc list` to list all temp commands.',
+  requiredUserPermissions: [PermissionFlagsBits.ManageGuild],
 
   checkPermission(message: Message, config: any): boolean {
-    // Owner bypass
-    if (message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID()) return true;
-    
-    // Check if user has any of the required roles
-    const allModRoles = config.permissions.moderatorRoles;
-    
-    return message.member?.roles.cache.some(role => 
-      allModRoles.includes(role.id)
-    ) || false;
+    return hasModAccess(message.member, message.author.id, config, [PermissionFlagsBits.ManageGuild]);
   },
 
   async execute(message: Message, args: string[], client: ExtendedClient) {
@@ -177,7 +170,7 @@ export default {
       const existingCommands = await getAllTempCommands();
       if (findTempCommand(existingCommands, commandName)) {
         return msg.reply({
-          content: `A temporary command with the name "${commandName}" already exists. Use \`.tc remove ${commandName}\` to remove it first.`,
+          content: `A temporary command with the name "${commandName}" already exists. Use \.tc remove ${commandName} to remove it first.`,
           allowedMentions: { parse: [] }
         });
       }
@@ -246,7 +239,7 @@ export default {
         activeCollectors.delete(message.author.id);
 
         await responseMsg.reply({
-          content: `**Temporary Command Created**\n\n**Command:** \`.${commandName}\`\n**Response:** ${responseText}\n\nCreated by ${message.author.tag}`,
+          content: `**Temporary Command Created**\n\n**Command:** \.${commandName}\n**Response:** ${responseText}\n\nCreated by ${message.author.tag}`,
           allowedMentions: { parse: [] }
         });
         responseCollector.stop('completed');

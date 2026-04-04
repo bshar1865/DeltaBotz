@@ -1,22 +1,15 @@
-import { Message, Client, TextChannel, EmbedBuilder, GuildMember } from 'discord.js';
-import idclass from '../../utils/idclass';
+import { Message, Client, TextChannel, EmbedBuilder, GuildMember, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
+import { hasModAccess } from '../../utils/permissions';
 
 export default {
   name: 'ban',
   description: 'Bans a user from the server.',
+  requiredUserPermissions: [PermissionFlagsBits.BanMembers],
 
   checkPermission(message: Message, config: any): boolean {
-    // Owner bypass
-    if (message.author.id === config.permissions.ownerId || message.author.id === idclass.ownershipID()) return true;
-    
-    // Check if user has any of the required roles
-    const allModRoles = config.permissions.moderatorRoles;
-    
-    return message.member?.roles.cache.some(role => 
-      allModRoles.includes(role.id)
-    ) || false;
+    return hasModAccess(message.member, message.author.id, config, [PermissionFlagsBits.BanMembers]);
   },
 
   async execute(message: Message, args: string[], client: Client) {
@@ -94,7 +87,7 @@ export default {
       } else {
         // If user is not in server, try to fetch them from Discord API
         try {
-          const user = await client.users.fetch(userId);
+          await client.users.fetch(userId);
           await message.guild?.members.ban(userId, { reason });
         } catch (error) {
           return message.reply({
@@ -127,3 +120,4 @@ export default {
     }
   }
 };
+

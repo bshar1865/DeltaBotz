@@ -1,6 +1,7 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, GuildMember } from "discord.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction, GuildMember, PermissionFlagsBits } from "discord.js";
 import configManager from "../utils/ConfigManager";
 import { setPendingStickerCopy } from "../utils/pendingStickerCopy";
+import { hasModAccess } from "../utils/permissions";
 
 export default {
   data: new SlashCommandBuilder()
@@ -17,8 +18,12 @@ export default {
 
     const member = interaction.member as GuildMember;
     const config = await configManager.getOrCreateConfig(interaction.guild);
-    const modRoles = config.permissions.moderatorRoles || [];
-    const hasPermission = modRoles.some((roleId: string) => member.roles.cache.has(roleId));
+    const hasPermission = hasModAccess(
+      member,
+      interaction.user.id,
+      config,
+      [PermissionFlagsBits.ManageEmojisAndStickers]
+    );
 
     if (!hasPermission) {
       return interaction.reply({
