@@ -1,9 +1,12 @@
+![DeltaBotz Banner](assets/banner.png)
+
 # DeltaBotz
 
 An open-source Discord bot focused on moderation, logging, emoji copying, honeypot protection, and per-server configuration.
 
 **Terms of Service:** [TOS.md](TOS.md)  
-**Privacy Policy:** [PRIVACY.md](PRIVACY.md)
+**Privacy Policy:** [PRIVACY.md](PRIVACY.md)  
+**Support Server:** [Join Discord](https://discord.gg/u3jQjYmBby)
 
 ## Features
 
@@ -95,8 +98,13 @@ MIT License
 
 ## Support
 
+- Support Server: [https://discord.gg/u3jQjYmBby](https://discord.gg/u3jQjYmBby)
 - Discord: @bshar1865
 - GitHub: [Issues](https://github.com/bshar1865/DeltaBotz/issues)
+
+## Credits
+
+- Thanks to [50n50](https://github.com/50n50) – huge thanks to my beloved friend 50n50 for the profile picture and banner design!
 
 ---
 

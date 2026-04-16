@@ -88,4 +88,4 @@ This Privacy Policy may be updated periodically. Continued use of the Bot indica
 10. Contact
 
 For privacy-related inquiries:
-[bsharesfky@gmail.com / @bshar1865 on Discord / SUPPORT SERVER is soon to be added.]
+[bsharesfky@gmail.com / @bshar1865 on Discord / https://discord.gg/u3jQjYmBby]

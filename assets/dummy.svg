@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">DeltaBotz banner placeholder</title>
+  <desc id="desc">Temporary placeholder banner for the DeltaBotz README.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="320" fill="url(#bg)" rx="24" />
+  <text x="50%" y="46%" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="64" fill="#ffffff">
+    DeltaBotz
+  </text>
+  <text x="50%" y="64%" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" fill="#dbeafe">
+    Replace assets/banner.svg with your final banner image later
+  </text>
+</svg>
