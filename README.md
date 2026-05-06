@@ -25,14 +25,17 @@ An open-source Discord bot focused on moderation, logging, emoji copying, honeyp
    npm install
    ```
 
-2. **Configure environment**
-   Rename `example.env` to `.env` and set your `DISCORD_TOKEN`.
+2. **Set up your environment**
+   Rename `example.env` to `.env`, then add your `DISCORD_TOKEN`.
 
 3. **Run the bot**
+
+   Using Bun (recommended):
    ```bash
    bunx ts-node index.ts
    ```
-   or
+
+   Or with Node:
    ```bash
    npx ts-node index.ts
    ```
