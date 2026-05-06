@@ -41,7 +41,9 @@ const command: Command = {
           new StringSelectMenuOptionBuilder().setLabel('Mod Commands').setValue('permissions').setDescription('Enable/disable moderator commands'),
           new StringSelectMenuOptionBuilder().setLabel('Logging').setValue('logging').setDescription('View logging settings'),
           new StringSelectMenuOptionBuilder().setLabel('Honeypot').setValue('honeypot').setDescription('View honeypot settings'),
-          new StringSelectMenuOptionBuilder().setLabel('Welcome & Role restoration').setValue('welcome_role').setDescription('Welcome, Goodbye, and Role Restore'),
+          new StringSelectMenuOptionBuilder().setLabel('Welcome').setValue('welcome').setDescription('Welcome embed settings'),
+          new StringSelectMenuOptionBuilder().setLabel('Goodbye').setValue('goodbye').setDescription('Leave embed settings'),
+          new StringSelectMenuOptionBuilder().setLabel('Role Restore').setValue('role_restore').setDescription('Store roles on leave and restore on join'),
           new StringSelectMenuOptionBuilder().setLabel('Others').setValue('auto_moderation').setDescription('Auto Embed and Invite Block')
         );
 

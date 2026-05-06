@@ -47,7 +47,7 @@ export default {
         
         const mainEmbed = new EmbedBuilder()
             .setTitle('DeltaBotz')
-            .setDescription('A moderation-focused Discord bot with setup tools and server utilities.')
+            .setDescription('DeltaBotz is a clean moderation + utility bot. Run /setup to set mod roles, logging, auto‑embed, invite block, honeypot, and welcome/role restore.')
             .setThumbnail(bot.user?.displayAvatarURL() || null)
             .addFields(
                 { 

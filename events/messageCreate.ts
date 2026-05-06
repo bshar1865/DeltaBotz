@@ -28,7 +28,6 @@ async function handleHoneypot(message: Message, config: any) {
   const guildId = message.guildId!;
   const honeypotChannelId = config.features.honeypot.channelId || '';
   const logChannelId = config.logging.logChannelId || '';
-  const deleteMessage = config.features.honeypot.deleteMessage ?? true;
 
   if (honeypotChannelId && message.channel.id === honeypotChannelId && config.features.honeypot.enabled) {
     const member = message.member;
@@ -40,7 +39,6 @@ async function handleHoneypot(message: Message, config: any) {
       const snapshot = message.content ?? "";
 
       if (
-        deleteMessage &&
         me.permissionsIn(message.channel).has(PermissionsBitField.Flags.ManageMessages)
       ) {
         await message.delete().catch(() => null);
@@ -381,7 +379,6 @@ export default {
     }
   },
 };
-
 
 
 

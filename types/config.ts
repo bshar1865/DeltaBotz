@@ -83,11 +83,27 @@ export interface FeatureConfig {
     channelId?: string;
     message?: string;
     roleId?: string;
+    embed?: {
+      title?: string;
+      description?: string;
+      color?: string;
+      footer?: string;
+      imageUrl?: string;
+      thumbnail?: boolean;
+    };
   };
   goodbye: {
     enabled: boolean;
     channelId?: string;
     message?: string;
+    embed?: {
+      title?: string;
+      description?: string;
+      color?: string;
+      footer?: string;
+      imageUrl?: string;
+      thumbnail?: boolean;
+    };
   };
   roleRestore: {
     enabled: boolean;

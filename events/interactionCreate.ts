@@ -114,9 +114,9 @@ export default {
         if (interaction.customId === 'setup_welcome_channel') {
           config.features.welcome = { ...(config.features.welcome || {}), channelId };
           await configManager.saveServerConfig(config);
-          const embed = buildWelcomeRoleEmbed(config);
+          const embed = buildWelcomeEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
+            await interaction.update({ embeds: [embed], components: buildWelcomeRows(true) });
           } catch (error) {
             console.error('Failed to update welcome channel:', error);
             if ((error as any).code === 10062) {
@@ -129,9 +129,9 @@ export default {
         if (interaction.customId === 'setup_goodbye_channel') {
           config.features.goodbye = { ...(config.features.goodbye || {}), channelId };
           await configManager.saveServerConfig(config);
-          const embed = buildWelcomeRoleEmbed(config);
+          const embed = buildGoodbyeEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
+            await interaction.update({ embeds: [embed], components: buildGoodbyeRows(true) });
           } catch (error) {
             console.error('Failed to update goodbye channel:', error);
             if ((error as any).code === 10062) {
@@ -163,9 +163,9 @@ export default {
         if (interaction.customId === 'toggle_welcome') {
           config.features.welcome = { ...(config.features.welcome || {}), enabled: !config.features?.welcome?.enabled };
           await configManager.saveServerConfig(config);
-          const embed = buildWelcomeRoleEmbed(config);
+          const embed = buildWelcomeEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
+            await interaction.update({ embeds: [embed], components: buildWelcomeRows(true) });
           } catch (error) {
             console.error('Failed to update welcome toggle:', error);
             if ((error as any).code === 10062) return;
@@ -176,9 +176,9 @@ export default {
         if (interaction.customId === 'toggle_goodbye') {
           config.features.goodbye = { ...(config.features.goodbye || {}), enabled: !config.features?.goodbye?.enabled };
           await configManager.saveServerConfig(config);
-          const embed = buildWelcomeRoleEmbed(config);
+          const embed = buildGoodbyeEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
+            await interaction.update({ embeds: [embed], components: buildGoodbyeRows(true) });
           } catch (error) {
             console.error('Failed to update goodbye toggle:', error);
             if ((error as any).code === 10062) return;
@@ -189,9 +189,9 @@ export default {
         if (interaction.customId === 'toggle_restore') {
           config.features.roleRestore = { ...(config.features.roleRestore || {}), enabled: !config.features?.roleRestore?.enabled };
           await configManager.saveServerConfig(config);
-          const embed = buildWelcomeRoleEmbed(config);
+          const embed = buildRoleRestoreEmbed(config);
           try {
-            await interaction.update({ embeds: [embed], components: buildWelcomeRoleRows(true) });
+            await interaction.update({ embeds: [embed], components: buildRoleRestoreRows(true) });
           } catch (error) {
             console.error('Failed to update restore toggle:', error);
             if ((error as any).code === 10062) return;
@@ -251,19 +251,6 @@ export default {
           }
           return;
         }
-        if (interaction.customId === 'toggle_honeypot_delete') {
-          config.features.honeypot = { ...(config.features.honeypot || {}), deleteMessage: !config.features?.honeypot?.deleteMessage };
-          await configManager.saveServerConfig(config);
-          const embed = buildHoneypotEmbed(config);
-          try {
-            await interaction.update({ embeds: [embed], components: buildHoneypotRows(true) });
-          } catch (error) {
-            console.error('Failed to update honeypot delete toggle:', error);
-            if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
-          }
-          return;
-        }
         if (interaction.customId === 'change_prefix') {
           // Create a modal for prefix input
           const modal = new ModalBuilder()
@@ -309,6 +296,130 @@ export default {
             }
             await interaction.followUp({ content: 'Prefix reset but failed to update display. Please refresh.', flags: MessageFlags.Ephemeral });
           }
+          return;
+        }
+        if (interaction.customId === 'reset_welcome_embed') {
+          config.features.welcome = { ...(config.features.welcome || {}), embed: undefined };
+          await configManager.saveServerConfig(config);
+          const embed = buildWelcomeEmbed(config);
+          await interaction.update({ embeds: [embed], components: buildWelcomeRows(true) }).catch(() => {});
+          return;
+        }
+        if (interaction.customId === 'reset_goodbye_embed') {
+          config.features.goodbye = { ...(config.features.goodbye || {}), embed: undefined };
+          await configManager.saveServerConfig(config);
+          const embed = buildGoodbyeEmbed(config);
+          await interaction.update({ embeds: [embed], components: buildGoodbyeRows(true) }).catch(() => {});
+          return;
+        }
+        if (interaction.customId === 'edit_welcome_embed') {
+          const modal = new ModalBuilder().setCustomId('welcome_embed_modal').setTitle('Edit Welcome Embed');
+          const current = config.features?.welcome?.embed || {};
+
+          const title = new TextInputBuilder()
+            .setCustomId('title')
+            .setLabel('Title (optional)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(256)
+            .setValue(current.title ?? '');
+
+          const description = new TextInputBuilder()
+            .setCustomId('description')
+            .setLabel('Description (optional)')
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(false)
+            .setMaxLength(2000)
+            .setValue(current.description ?? '');
+
+          const color = new TextInputBuilder()
+            .setCustomId('color')
+            .setLabel('Color hex (optional, e.g. #0099ff)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(7)
+            .setValue(current.color ?? '');
+
+          const footer = new TextInputBuilder()
+            .setCustomId('footer')
+            .setLabel('Footer (optional)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(2048)
+            .setValue(current.footer ?? '');
+
+          const imageUrl = new TextInputBuilder()
+            .setCustomId('imageUrl')
+            .setLabel('Image URL (optional)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(4000)
+            .setValue(current.imageUrl ?? '');
+
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(title),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(description),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(color),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(footer),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(imageUrl),
+          );
+
+          await interaction.showModal(modal).catch(() => {});
+          return;
+        }
+        if (interaction.customId === 'edit_goodbye_embed') {
+          const modal = new ModalBuilder().setCustomId('goodbye_embed_modal').setTitle('Edit Goodbye Embed');
+          const current = config.features?.goodbye?.embed || {};
+
+          const title = new TextInputBuilder()
+            .setCustomId('title')
+            .setLabel('Title (optional)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(256)
+            .setValue(current.title ?? '');
+
+          const description = new TextInputBuilder()
+            .setCustomId('description')
+            .setLabel('Description (optional)')
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(false)
+            .setMaxLength(2000)
+            .setValue(current.description ?? '');
+
+          const color = new TextInputBuilder()
+            .setCustomId('color')
+            .setLabel('Color hex (optional, e.g. #0099ff)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(7)
+            .setValue(current.color ?? '');
+
+          const footer = new TextInputBuilder()
+            .setCustomId('footer')
+            .setLabel('Footer (optional)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(2048)
+            .setValue(current.footer ?? '');
+
+          const imageUrl = new TextInputBuilder()
+            .setCustomId('imageUrl')
+            .setLabel('Image URL (optional)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(4000)
+            .setValue(current.imageUrl ?? '');
+
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(title),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(description),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(color),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(footer),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(imageUrl),
+          );
+
+          await interaction.showModal(modal).catch(() => {});
           return;
         }
       } else if (interaction.isModalSubmit()) {
@@ -370,6 +481,74 @@ export default {
             }
           }
         }
+
+        if (interaction.customId === 'welcome_embed_modal') {
+          const isOwner = (interaction as any).user?.id === idclass.ownershipID();
+          if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+            await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral }).catch(() => {});
+            return;
+          }
+
+          const guild = interaction.guild!;
+          const config = await configManager.getOrCreateConfig(guild);
+
+          const title = interaction.fields.getTextInputValue('title').trim();
+          const description = interaction.fields.getTextInputValue('description').trim();
+          const color = interaction.fields.getTextInputValue('color').trim();
+          const footer = interaction.fields.getTextInputValue('footer').trim();
+          const imageUrl = interaction.fields.getTextInputValue('imageUrl').trim();
+
+          const embed = {
+            ...(config.features.welcome.embed || {}),
+            title: title || undefined,
+            description: description || undefined,
+            color: color || undefined,
+            footer: footer || undefined,
+            imageUrl: imageUrl || undefined,
+            thumbnail: config.features.welcome.embed?.thumbnail ?? true,
+          };
+
+          config.features.welcome = { ...(config.features.welcome || {}), embed };
+          await configManager.saveServerConfig(config);
+
+          const page = buildWelcomeEmbed(config);
+          await interaction.reply({ content: 'Welcome embed updated.', embeds: [page], components: buildWelcomeRows(true), flags: MessageFlags.Ephemeral }).catch(() => {});
+          return;
+        }
+
+        if (interaction.customId === 'goodbye_embed_modal') {
+          const isOwner = (interaction as any).user?.id === idclass.ownershipID();
+          if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+            await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral }).catch(() => {});
+            return;
+          }
+
+          const guild = interaction.guild!;
+          const config = await configManager.getOrCreateConfig(guild);
+
+          const title = interaction.fields.getTextInputValue('title').trim();
+          const description = interaction.fields.getTextInputValue('description').trim();
+          const color = interaction.fields.getTextInputValue('color').trim();
+          const footer = interaction.fields.getTextInputValue('footer').trim();
+          const imageUrl = interaction.fields.getTextInputValue('imageUrl').trim();
+
+          const embed = {
+            ...(config.features.goodbye.embed || {}),
+            title: title || undefined,
+            description: description || undefined,
+            color: color || undefined,
+            footer: footer || undefined,
+            imageUrl: imageUrl || undefined,
+            thumbnail: config.features.goodbye.embed?.thumbnail ?? true,
+          };
+
+          config.features.goodbye = { ...(config.features.goodbye || {}), embed };
+          await configManager.saveServerConfig(config);
+
+          const page = buildGoodbyeEmbed(config);
+          await interaction.reply({ content: 'Goodbye embed updated.', embeds: [page], components: buildGoodbyeRows(true), flags: MessageFlags.Ephemeral }).catch(() => {});
+          return;
+        }
       }
     } catch (error) {
       console.error("Error in InteractionCreate:", error);
@@ -412,7 +591,7 @@ async function handleAutoEmbedSwitch(interaction: ButtonInteraction) {
   const { createdAt: _createdAt, ...rest } = state;
   setAutoEmbedSwitchState(interaction.message.id, { ...rest, currentIndex: index });
 
-  const content = state.template === "plain" ? nextUrl : `here is embed:\n${nextUrl}`;
+  const content = state.template === "plain" ? nextUrl : `[⠀](${nextUrl})`;
   await interaction.update({
     content,
     components: [row],
@@ -451,8 +630,20 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
       rows = buildHoneypotRows(true);
       break;
     case 'welcome_role':
-      embed = buildWelcomeRoleEmbed(config);
-      rows = buildWelcomeRoleRows(true);
+      embed = buildWelcomeEmbed(config);
+      rows = buildWelcomeRows(true);
+      break;
+    case 'welcome':
+      embed = buildWelcomeEmbed(config);
+      rows = buildWelcomeRows(true);
+      break;
+    case 'goodbye':
+      embed = buildGoodbyeEmbed(config);
+      rows = buildGoodbyeRows(true);
+      break;
+    case 'role_restore':
+      embed = buildRoleRestoreEmbed(config);
+      rows = buildRoleRestoreRows(true);
       break;
     case 'auto_moderation':
       embed = buildAutoModerationEmbed(config);
@@ -540,21 +731,44 @@ function buildHoneypotEmbed(config: ServerConfig): EmbedBuilder {
     { name: 'Enabled', value: config.features?.honeypot?.enabled ? 'Yes' : 'No', inline: true },
     { name: 'Channel', value: config.features?.honeypot?.channelId ? `<#${config.features.honeypot.channelId}>` : 'Not set', inline: true },
     { name: 'Auto Unban', value: config.features?.honeypot?.autoUnban ? 'Yes' : 'No', inline: true },
-    { name: 'Delete Messages', value: config.features?.honeypot?.deleteMessage ? 'Yes' : 'No', inline: true },
   );
 }
 
-function buildWelcomeRoleEmbed(config: ServerConfig): EmbedBuilder {
-  return new EmbedBuilder()
-    .setTitle('Welcome & Role restoration')
-    .setColor('#0099ff')
-    .addFields(
-      { name: 'Welcome', value: config.features?.welcome?.enabled ? 'Enabled' : 'Disabled', inline: true },
-      { name: 'Goodbye', value: config.features?.goodbye?.enabled ? 'Enabled' : 'Disabled', inline: true },
-      { name: 'Role Restore', value: config.features?.roleRestore?.enabled ? 'Enabled' : 'Disabled', inline: true },
-    )
-    .setFooter({ text: 'Note: Role Restore acts as a role logger; it stores a user\'s roles on leave and restores them when they rejoin.' })
-    .setTimestamp();
+function shorten(input: string, max = 900): string {
+  const text = String(input ?? "");
+  if (text.length <= max) return text;
+  return `${text.slice(0, max - 3)}...`;
+}
+
+function buildWelcomeEmbed(config: ServerConfig): EmbedBuilder {
+  const w = config.features?.welcome || { enabled: false };
+  const e = w.embed || {};
+  return buildBaseEmbed('Welcome', 'Public welcome embed (per-server).').addFields(
+    { name: 'Enabled', value: w.enabled ? 'Yes' : 'No', inline: true },
+    { name: 'Channel', value: w.channelId ? `<#${w.channelId}>` : 'Not set', inline: true },
+    { name: 'Title', value: shorten(e.title || 'Welcome!'), inline: false },
+    { name: 'Description', value: shorten(e.description || '{user} joined the server.'), inline: false },
+    { name: 'Color', value: e.color ? `\`${e.color}\`` : '`#0099ff`', inline: true },
+  );
+}
+
+function buildGoodbyeEmbed(config: ServerConfig): EmbedBuilder {
+  const g = config.features?.goodbye || { enabled: false };
+  const e = g.embed || {};
+  return buildBaseEmbed('Goodbye', 'Public leave embed (per-server).').addFields(
+    { name: 'Enabled', value: g.enabled ? 'Yes' : 'No', inline: true },
+    { name: 'Channel', value: g.channelId ? `<#${g.channelId}>` : 'Not set', inline: true },
+    { name: 'Title', value: shorten(e.title || 'Goodbye!'), inline: false },
+    { name: 'Description', value: shorten(e.description || '{user} left the server.'), inline: false },
+    { name: 'Color', value: e.color ? `\`${e.color}\`` : '`#0099ff`', inline: true },
+  );
+}
+
+function buildRoleRestoreEmbed(config: ServerConfig): EmbedBuilder {
+  return buildBaseEmbed('Role Restore', 'Stores a user’s roles on leave and restores them on rejoin.').addFields(
+    { name: 'Enabled', value: config.features?.roleRestore?.enabled ? 'Yes' : 'No', inline: true },
+    { name: 'Note', value: 'No roles are announced in welcome/leave messages.', inline: false },
+  );
 }
 
 function buildAutoModerationEmbed(config: ServerConfig): EmbedBuilder {
@@ -580,7 +794,9 @@ function buildMainRows() {
       new StringSelectMenuOptionBuilder().setLabel('Mod Commands').setValue('permissions').setDescription('Enable/disable moderator commands'),
       new StringSelectMenuOptionBuilder().setLabel('Logging').setValue('logging').setDescription('View logging settings'),
       new StringSelectMenuOptionBuilder().setLabel('Honeypot').setValue('honeypot').setDescription('View honeypot settings'),
-      new StringSelectMenuOptionBuilder().setLabel('Welcome & Role restoration').setValue('welcome_role').setDescription('Welcome, Goodbye, and Role Restore'),
+      new StringSelectMenuOptionBuilder().setLabel('Welcome').setValue('welcome').setDescription('Welcome embed settings'),
+      new StringSelectMenuOptionBuilder().setLabel('Goodbye').setValue('goodbye').setDescription('Leave embed settings'),
+      new StringSelectMenuOptionBuilder().setLabel('Role Restore').setValue('role_restore').setDescription('Store roles on leave and restore on join'),
       new StringSelectMenuOptionBuilder().setLabel('Others').setValue('auto_moderation').setDescription('Auto Embed and Invite Block'),
     );
   return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)];
@@ -645,25 +861,41 @@ function buildHoneypotRows(includeBack?: boolean) {
     .setMaxValues(1);
   const toggles = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId('toggle_honeypot_autounban').setLabel('Toggle Auto-unban').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('toggle_honeypot_delete').setLabel('Toggle Delete Msgs').setStyle(ButtonStyle.Secondary),
   );
   const rows: any[] = [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(honeypotSelect), toggles];
   if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
   return rows;
 }
 
-function buildWelcomeRoleRows(includeBack?: boolean) {
-  // Buttons to toggle welcome/role features
-  const toggleWelcome = new ButtonBuilder().setCustomId('toggle_welcome').setLabel('Toggle Welcome').setStyle(ButtonStyle.Secondary);
-  const toggleGoodbye = new ButtonBuilder().setCustomId('toggle_goodbye').setLabel('Toggle Goodbye').setStyle(ButtonStyle.Secondary);
-  const toggleRestore = new ButtonBuilder().setCustomId('toggle_restore').setLabel('Toggle Role Restore').setStyle(ButtonStyle.Secondary);
-  const welcomeChannel = new ChannelSelectMenuBuilder().setCustomId('setup_welcome_channel').setChannelTypes(ChannelType.GuildText).setPlaceholder('Select Welcome channel').setMinValues(0).setMaxValues(1);
-  const goodbyeChannel = new ChannelSelectMenuBuilder().setCustomId('setup_goodbye_channel').setChannelTypes(ChannelType.GuildText).setPlaceholder('Select Goodbye channel').setMinValues(0).setMaxValues(1);
+function buildWelcomeRows(includeBack?: boolean) {
+  const toggle = new ButtonBuilder().setCustomId('toggle_welcome').setLabel('Toggle Welcome').setStyle(ButtonStyle.Secondary);
+  const edit = new ButtonBuilder().setCustomId('edit_welcome_embed').setLabel('Edit Embed').setStyle(ButtonStyle.Primary);
+  const reset = new ButtonBuilder().setCustomId('reset_welcome_embed').setLabel('Reset Embed').setStyle(ButtonStyle.Secondary);
+  const channel = new ChannelSelectMenuBuilder().setCustomId('setup_welcome_channel').setChannelTypes(ChannelType.GuildText).setPlaceholder('Select Welcome channel').setMinValues(0).setMaxValues(1);
   const rows: any[] = [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(toggleWelcome, toggleGoodbye, toggleRestore),
-    new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(welcomeChannel),
-    new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(goodbyeChannel),
+    new ActionRowBuilder<ButtonBuilder>().addComponents(toggle, edit, reset),
+    new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(channel),
   ];
+  if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
+  return rows;
+}
+
+function buildGoodbyeRows(includeBack?: boolean) {
+  const toggle = new ButtonBuilder().setCustomId('toggle_goodbye').setLabel('Toggle Goodbye').setStyle(ButtonStyle.Secondary);
+  const edit = new ButtonBuilder().setCustomId('edit_goodbye_embed').setLabel('Edit Embed').setStyle(ButtonStyle.Primary);
+  const reset = new ButtonBuilder().setCustomId('reset_goodbye_embed').setLabel('Reset Embed').setStyle(ButtonStyle.Secondary);
+  const channel = new ChannelSelectMenuBuilder().setCustomId('setup_goodbye_channel').setChannelTypes(ChannelType.GuildText).setPlaceholder('Select Goodbye channel').setMinValues(0).setMaxValues(1);
+  const rows: any[] = [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(toggle, edit, reset),
+    new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(channel),
+  ];
+  if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
+  return rows;
+}
+
+function buildRoleRestoreRows(includeBack?: boolean) {
+  const toggleRestore = new ButtonBuilder().setCustomId('toggle_restore').setLabel('Toggle Role Restore').setStyle(ButtonStyle.Secondary);
+  const rows: any[] = [new ActionRowBuilder<ButtonBuilder>().addComponents(toggleRestore)];
   if (includeBack) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('setup_back').setLabel('Back').setStyle(ButtonStyle.Secondary)));
   return rows;
 }
