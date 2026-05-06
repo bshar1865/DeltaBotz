@@ -2,6 +2,7 @@ import { Message, GuildMember, EmbedBuilder, PermissionFlagsBits } from 'discord
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
+import { MESSAGES } from '../../utils/messages';
 
 export default {
   name: 'unban',
@@ -15,7 +16,7 @@ export default {
     const me = message.guild.members.me;
     if (!me?.permissions.has(PermissionFlagsBits.BanMembers)) {
       return message.reply({
-        content: 'I need Ban Members permission to do that.',
+        content: MESSAGES.common.botMissingPermission('Ban Members'),
         allowedMentions: { parse: [] }
       });
     }
@@ -28,7 +29,7 @@ export default {
 
     if (!hasPermission) {
       return message.reply({
-        content: 'You do not have permission to use this command.',
+        content: MESSAGES.common.noPermission,
         allowedMentions: { parse: [] }
       });
     }
@@ -46,7 +47,7 @@ export default {
     const userId = args[0]?.replace(/[<@!>]/g, '');
     if (!userId) {
       return message.reply({
-        content: 'Please provide a user ID or mention to unban.',
+        content: MESSAGES.moderation.usage.unban,
         allowedMentions: { parse: [] }
       });
     }
@@ -65,14 +66,14 @@ export default {
       await message.guild?.members.unban(userId, reason);
 
       await message.reply({
-        content: `<@${userId}> has been __**UNBANNED**__`,
+        content: MESSAGES.moderation.reply.unbanned(userId),
         allowedMentions: { parse: [] }
       });
 
       const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '');
       if (logChannel?.isTextBased()) {
         logChannel.send({
-          content: `Action: Unban\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
+          content: MESSAGES.moderation.log.unban(userId, message.author.id, reason),
           allowedMentions: { parse: [] }
         });
       }

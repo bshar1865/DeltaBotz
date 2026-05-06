@@ -1,6 +1,8 @@
 import { Message, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { hasModAccess } from '../../utils/permissions';
+import { canModerateTarget } from '../../utils/canModerateTarget';
+import { MESSAGES } from '../../utils/messages';
 
 export default {
   name: 'remover',
@@ -20,14 +22,14 @@ export default {
 
     if (!hasPermission) {
       return message.reply({
-        content: 'You do not have permission to use this command.',
+        content: MESSAGES.common.noPermission,
         allowedMentions: { parse: [] }
       });
     }
 
     if (args.length < 2) {
       return message.reply({
-        content: 'Usage: `remover <@user|userID> <roleID1> [roleID2 ...]`',
+        content: MESSAGES.moderation.usage.remover,
         allowedMentions: { parse: [] }
       });
     }
@@ -37,24 +39,40 @@ export default {
     const me = message.guild.members.me;
     if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return message.reply({
-        content: 'I need Manage Roles permission to do that.',
+        content: MESSAGES.common.botMissingPermission('Manage Roles'),
         allowedMentions: { parse: [] }
       });
     }
     if (!targetMember) {
       return message.reply({
-        content: 'Could not find the specified user.',
+        content: MESSAGES.roles.targetNotFound,
         allowedMentions: { parse: [] }
       });
+    }
+
+    if (message.member) {
+      const guard = canModerateTarget(message.member, targetMember, message.guild);
+      if (!guard.ok) {
+        return message.reply({ content: guard.reason, allowedMentions: { parse: [] } });
+      }
     }
 
     const roleIds = args.slice(1);
     const validRoles = [];
     const rejectedRoles = [];
 
+    const isGuildOwner = message.author.id === message.guild.ownerId;
+
     for (const roleId of roleIds) {
       const role = message.guild.roles.cache.get(roleId);
-      if (!role || (config.permissions.moderatorRoles || []).includes(role.id)) {
+      if (
+        !role ||
+        role.id === message.guild.id ||
+        role.managed ||
+        (config.permissions.moderatorRoles || []).includes(role.id) ||
+        (!isGuildOwner && message.member && role.comparePositionTo(message.member.roles.highest) >= 0) ||
+        !role.editable
+      ) {
         rejectedRoles.push(roleId);
       } else {
         validRoles.push(role);
@@ -65,41 +83,41 @@ export default {
       if (validRoles.length > 0) {
         await targetMember.roles.remove(validRoles.map(r => r.id));
         await message.reply({
-          content: `Removed roles from <@${targetMember.id}>: ${validRoles.map(r => r.name).join(', ')}`,
+          content: MESSAGES.roles.removedRoles(targetMember.id, validRoles.map(r => r.name)),
           allowedMentions: { parse: [] }
         });
 
         const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '');
         if (logChannel?.isTextBased()) {
           logChannel.send({
-            content: `Action: Remove Role\nUser: <@${targetMember.id}>\nBy: <@${message.author.id}>\nRoles: ${validRoles.map(r => r.name).join(', ')}`,
+            content: MESSAGES.roles.logRemoveRole(targetMember.id, message.author.id, validRoles.map(r => r.name)),
             allowedMentions: { parse: [] }
           });
         }
       } else {
         await message.reply({
-          content: 'No valid roles to remove.',
+          content: MESSAGES.roles.noValidRolesToRemove,
           allowedMentions: { parse: [] }
         });
       }
 
       if (rejectedRoles.length > 0) {
         await message.reply({
-          content: `Invalid or restricted role IDs: ${rejectedRoles.join(', ')}`,
+          content: MESSAGES.roles.invalidOrRestrictedRoleIds(rejectedRoles),
           allowedMentions: { parse: [] }
         });
       }
     } catch (err) {
       console.error(err);
       await message.reply({
-        content: 'An error occurred while removing roles.',
+        content: MESSAGES.roles.removeError,
         allowedMentions: { parse: [] }
       });
 
       const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '');
       if (logChannel?.isTextBased()) {
         logChannel.send({
-          content: `Action: Remove Role (Error)\nUser: <@${targetMember.id}>\nBy: <@${message.author.id}>`,
+          content: MESSAGES.roles.logRemoveRoleError(targetMember.id, message.author.id),
           allowedMentions: { parse: [] }
         });
       }

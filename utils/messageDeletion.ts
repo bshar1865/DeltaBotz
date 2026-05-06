@@ -1,4 +1,4 @@
-import { Guild, TextChannel, ChannelType, Collection, Message } from 'discord.js';
+import { Guild, ChannelType, Collection, Message } from 'discord.js';
 
 /**
  * Deletes all messages from a user in all channels within the last 1 day (24 hours)
@@ -11,10 +11,12 @@ export async function deleteUserMessagesLastDay(guild: Guild, userId: string): P
   const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000); // 1 day in milliseconds
 
   try {
-    // Get all text channels in the guild
-    const channels = guild.channels.cache.filter(
-      channel => channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement
-    ) as Collection<string, TextChannel>;
+    // Get all text-capable channels in the guild (including threads when cached)
+    const channels = guild.channels.cache.filter((channel: any) => {
+      // Forum channels themselves are not message containers; their threads are.
+      if (channel.type === ChannelType.GuildForum) return false;
+      return channel.isTextBased();
+    }) as unknown as Collection<string, any>;
 
     // Process each channel
     for (const [, channel] of channels) {

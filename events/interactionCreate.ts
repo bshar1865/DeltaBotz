@@ -1,9 +1,10 @@
-import { Events, Interaction, StringSelectMenuInteraction, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { Events, Interaction, StringSelectMenuInteraction, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, ButtonInteraction, MessageFlags } from "discord.js";
 import { logError } from "../utils/errorLogger";
 import { ExtendedClient } from "../client";
 import configManager from "../utils/ConfigManager";
 import idclass from "../utils/idclass";
 import { ServerConfig } from "../types/config";
+import { getAutoEmbedSwitchState, setAutoEmbedSwitchState } from "../utils/autoEmbedSwitchState";
 
 export default {
   name: Events.InteractionCreate,
@@ -23,7 +24,7 @@ export default {
           if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
             await interaction.reply({
               content: "Something went wrong while executing this command.",
-              flags: 64, // MessageFlags.Ephemeral
+              flags: MessageFlags.Ephemeral,
             }).catch(() => {});
           }
         }
@@ -33,7 +34,7 @@ export default {
           // Admin-only guard
           const isOwner = (interaction as any).user?.id === idclass.ownershipID();
           if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            await interaction.reply({ content: 'You need Administrator to use setup.', flags: 64 }).catch(() => {});
+            await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral }).catch(() => {});
             return;
           }
           await handleSetupMenu(interaction as StringSelectMenuInteraction);
@@ -43,7 +44,7 @@ export default {
         if (interaction.customId === 'setup_role_mods') {
           const isOwner = (interaction as any).user?.id === idclass.ownershipID();
           if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            await interaction.reply({ content: 'You need Administrator to use setup.', flags: 64 }).catch(() => {});
+            await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral }).catch(() => {});
             return;
           }
           const guild = interaction.guild!;
@@ -60,13 +61,13 @@ export default {
               console.log('Interaction expired, skipping role update response');
               return;
             }
-            await interaction.followUp({ content: 'Roles updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Roles updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
         }
       } else if (interaction.isChannelSelectMenu()) {
         const isOwner = (interaction as any).user?.id === idclass.ownershipID();
         if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-          await interaction.reply({ content: 'You need Administrator to use setup.', flags: 64 }).catch(() => {});
+          await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral }).catch(() => {});
           return;
         }
         const guild = interaction.guild!;
@@ -84,7 +85,7 @@ export default {
               console.log('Interaction expired, skipping log channel update response');
               return;
             }
-            await interaction.followUp({ content: 'Log channel set but failed to update display.', flags: 64 });
+            await interaction.followUp({ content: 'Log channel set but failed to update display.', flags: MessageFlags.Ephemeral });
           }
         }
         if (interaction.customId === 'setup_honeypot_channel') {
@@ -107,7 +108,7 @@ export default {
               console.log('Interaction expired, skipping honeypot channel update response');
               return;
             }
-            await interaction.followUp({ content: 'Honeypot channel set but failed to update display.', flags: 64 });
+            await interaction.followUp({ content: 'Honeypot channel set but failed to update display.', flags: MessageFlags.Ephemeral });
           }
         }
         if (interaction.customId === 'setup_welcome_channel') {
@@ -122,7 +123,7 @@ export default {
               console.log('Interaction expired, skipping welcome channel update response');
               return;
             }
-            await interaction.followUp({ content: 'Welcome channel set but failed to update display.', flags: 64 });
+            await interaction.followUp({ content: 'Welcome channel set but failed to update display.', flags: MessageFlags.Ephemeral });
           }
         }
         if (interaction.customId === 'setup_goodbye_channel') {
@@ -137,14 +138,19 @@ export default {
               console.log('Interaction expired, skipping goodbye channel update response');
               return;
             }
-            await interaction.followUp({ content: 'Goodbye channel set but failed to update display.', flags: 64 });
+            await interaction.followUp({ content: 'Goodbye channel set but failed to update display.', flags: MessageFlags.Ephemeral });
           }
         }
       }
       else if (interaction.isButton()) {
+        if (interaction.customId.startsWith('autoembed_set:')) {
+          await handleAutoEmbedSwitch(interaction as ButtonInteraction);
+          return;
+        }
+
         const isOwner = (interaction as any).user?.id === idclass.ownershipID();
         if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-          await interaction.reply({ content: 'You need Administrator to use setup.', flags: 64 }).catch(() => {});
+          await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral }).catch(() => {});
           return;
         }
         const guild = interaction.guild!;
@@ -163,7 +169,7 @@ export default {
           } catch (error) {
             console.error('Failed to update welcome toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -176,7 +182,7 @@ export default {
           } catch (error) {
             console.error('Failed to update goodbye toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -189,7 +195,7 @@ export default {
           } catch (error) {
             console.error('Failed to update restore toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -202,7 +208,7 @@ export default {
           } catch (error) {
             console.error('Failed to update auto embed toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -215,7 +221,7 @@ export default {
           } catch (error) {
             console.error('Failed to update invite block toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -228,7 +234,7 @@ export default {
           } catch (error) {
             console.error('Failed to update moderator commands toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -241,7 +247,7 @@ export default {
           } catch (error) {
             console.error('Failed to update honeypot autounban toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -254,7 +260,7 @@ export default {
           } catch (error) {
             console.error('Failed to update honeypot delete toggle:', error);
             if ((error as any).code === 10062) return;
-            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: 64 });
+            await interaction.followUp({ content: 'Settings updated but failed to refresh display.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -301,7 +307,7 @@ export default {
               console.log('Interaction expired, skipping prefix reset response');
               return;
             }
-            await interaction.followUp({ content: 'Prefix reset but failed to update display. Please refresh.', flags: 64 });
+            await interaction.followUp({ content: 'Prefix reset but failed to update display. Please refresh.', flags: MessageFlags.Ephemeral });
           }
           return;
         }
@@ -310,7 +316,7 @@ export default {
         if (interaction.customId === 'prefix_modal') {
           const isOwner = (interaction as any).user?.id === idclass.ownershipID();
           if (!isOwner && !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            await interaction.reply({ content: 'You need Administrator to use setup.', flags: 64 }).catch(() => {});
+            await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral }).catch(() => {});
             return;
           }
           
@@ -328,7 +334,7 @@ export default {
                 content: `Prefix changed to \`${newPrefix}\``,
                 embeds: [embed],
                 components: buildPrefixRows(true),
-                flags: 64
+                flags: MessageFlags.Ephemeral
               });
             } catch (error) {
               console.error('Failed to reply to prefix modal:', error);
@@ -336,7 +342,7 @@ export default {
               if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({
                   content: `Prefix changed to \`${newPrefix}\``,
-                  flags: 64
+                  flags: MessageFlags.Ephemeral
                 });
               } else {
                 // If we can't reply at all, just log the error
@@ -347,7 +353,7 @@ export default {
             try {
               await interaction.reply({
                 content: 'Invalid prefix. Please use 1-5 characters.',
-                flags: 64
+                flags: MessageFlags.Ephemeral
               });
             } catch (error) {
               console.error('Failed to reply to prefix modal error:', error);
@@ -355,7 +361,7 @@ export default {
               if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({
                   content: 'Invalid prefix. Please use 1-5 characters.',
-                  flags: 64
+                  flags: MessageFlags.Ephemeral
                 });
               } else {
                 // If we can't reply at all, just log the error
@@ -371,6 +377,49 @@ export default {
     }
   },
 };
+
+async function handleAutoEmbedSwitch(interaction: ButtonInteraction) {
+  const state = getAutoEmbedSwitchState(interaction.message.id);
+  if (!state) {
+    await interaction.reply({ content: 'This embed switch expired. Please run it again.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    return;
+  }
+
+  if (interaction.user.id !== state.authorId) {
+    await interaction.reply({ content: 'Only the original sender can switch this embed.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    return;
+  }
+
+  const rawIndex = interaction.customId.split(':')[1];
+  const index = Number(rawIndex);
+  if (!Number.isFinite(index) || index < 0 || index >= state.candidates.length) {
+    await interaction.reply({ content: 'Invalid selection.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    return;
+  }
+
+  const nextUrl = state.candidates[index];
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    state.candidates.slice(0, 5).map((candidate, i) => {
+      const host = new URL(candidate).hostname.replace(/^www\./i, "");
+      return new ButtonBuilder()
+        .setCustomId(`autoembed_set:${i}`)
+        .setLabel(host)
+        .setStyle(i === index ? ButtonStyle.Primary : ButtonStyle.Secondary);
+    })
+  );
+
+  const { createdAt: _createdAt, ...rest } = state;
+  setAutoEmbedSwitchState(interaction.message.id, { ...rest, currentIndex: index });
+
+  const content = state.template === "plain" ? nextUrl : `here is embed:\n${nextUrl}`;
+  await interaction.update({
+    content,
+    components: [row],
+  }).catch(async () => {
+    await interaction.reply({ content: 'Failed to update embed message.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  });
+}
 
 async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
   if (!interaction.guild) return;
@@ -426,7 +475,7 @@ async function handleSetupMenu(interaction: StringSelectMenuInteraction) {
     try {
       await interaction.followUp({ 
         content: 'Failed to update the setup menu. Please try again.', 
-        flags: 64 
+        flags: MessageFlags.Ephemeral 
       });
     } catch (followUpError) {
       console.error('Failed to send follow-up message:', followUpError);

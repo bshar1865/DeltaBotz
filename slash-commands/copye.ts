@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import configManager from '../utils/ConfigManager';
 import { hasModAccess } from '../utils/permissions';
+import { MESSAGES } from '../utils/messages';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -39,28 +40,28 @@ async function addEmojisWithPause(guild: Guild, emojiData: string[], interaction
       emojiId = emojiInput;
       nameFromUrl = `emoji_${emojiId}`;
     } else {
-      logLines.push(`Invalid format for \`${emojiInput}\``);
+      logLines.push(MESSAGES.copy.copye.invalidFormat(emojiInput));
       failed++;
       index++;
       continue;
     }
 
     if (addedEmojis.has(nameFromUrl)) {
-      logLines.push(`Emoji \`${nameFromUrl}\` already exists.`);
+      logLines.push(MESSAGES.copy.copye.alreadyExists(nameFromUrl));
       skipped++;
       index++;
       continue;
     }
 
     if (isAnimated && remainingAnimated <= 0) {
-      logLines.push(`Skipped animated emoji \`${nameFromUrl}\` - no animated slots left.`);
+      logLines.push(MESSAGES.copy.copye.noAnimatedSlots(nameFromUrl));
       skipped++;
       index++;
       continue;
     }
 
     if (!isAnimated && remainingStatic <= 0) {
-      logLines.push(`Skipped static emoji \`${nameFromUrl}\` - no static slots left.`);
+      logLines.push(MESSAGES.copy.copye.noStaticSlots(nameFromUrl));
       skipped++;
       index++;
       continue;
@@ -73,42 +74,42 @@ async function addEmojisWithPause(guild: Guild, emojiData: string[], interaction
         name: nameFromUrl
       });
 
-      logLines.push(`${isAnimated ? '<a:' : '<:'}${emoji.name}:${emoji.id}> \`:${emoji.name}:\``);
+      logLines.push(MESSAGES.copy.copye.addedLine(isAnimated, emoji.name, emoji.id));
       isAnimated ? remainingAnimated-- : remainingStatic--;
       added++;
     } catch (error: any) {
       failed++;
 
       if (error.code === 50013) {
-        logLines.push('Missing permissions to add emojis in this server.');
+        logLines.push(MESSAGES.copy.copye.missingPermissionsToAdd);
       } else if (
         error.message?.includes("rate limited") ||
         error.code === 20028 // Rate limit
       ) {
-        logLines.push(`Rate limit hit. Pausing for 15 minutes...`);
+        logLines.push(MESSAGES.copy.copye.rateLimitedPause);
         await interaction.followUp({
-          content: "Rate limited. Waiting 15 minutes before resuming...",
+          content: MESSAGES.copy.copye.rateLimitedWaiting,
           ephemeral: false
         });
 
         await sleep(15 * 60 * 1000);
 
-        logLines.push(`Resuming copying.`);
+        logLines.push(MESSAGES.copy.copye.resuming);
         await interaction.followUp({
-          content: "Resuming copying after 15-minute wait.",
+          content: MESSAGES.copy.copye.rateLimitedResume,
           ephemeral: false
         });
 
         continue;
       } else {
-        logLines.push(`Failed to add emoji \`${nameFromUrl}\``);
+        logLines.push(MESSAGES.copy.copye.failedToAdd(nameFromUrl));
       }
     }
 
     index++;
   }
 
-  logLines.unshift(`Added: ${added} | Skipped: ${skipped} | Failed: ${failed}`);
+  logLines.unshift(MESSAGES.copy.copye.summary(added, skipped, failed));
 
   const chunks: string[] = [];
   let chunk = '';
@@ -145,7 +146,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   if (!hasPermission) {
     return interaction.reply({
-      content: 'You do not have permission to use this command.',
+      content: MESSAGES.common.noPermission,
       ephemeral: true
     });
   }
@@ -177,7 +178,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   if (emojiArray.length === 0) {
     return interaction.reply({
-      content: 'No valid emojis or IDs found in the input.',
+      content: MESSAGES.copy.copye.noValidInput,
       ephemeral: true
     });
   }
@@ -196,7 +197,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (logChannel) {
       for (const chunk of logs) {
         await logChannel.send({
-          content: `**Emoji has been** __**COPIED**__ **by <@${interaction.user.id}>**\n${chunk}`,
+          content: `${MESSAGES.copy.copye.logHeader(interaction.user.id)}\n${chunk}`,
           allowedMentions: { parse: [] }
         });
       }

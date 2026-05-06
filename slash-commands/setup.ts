@@ -5,7 +5,8 @@ import {
   PermissionFlagsBits,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder
+  StringSelectMenuOptionBuilder,
+  MessageFlags
 } from 'discord.js';
 import { Command } from '../types';
 import configManager from '../utils/ConfigManager';
@@ -18,7 +19,7 @@ const command: Command = {
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
-      await interaction.reply({ content: 'This command can only be used in a server!', flags: 64 });
+      await interaction.reply({ content: 'This command can only be used in a server!', flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -26,7 +27,7 @@ const command: Command = {
       const isOwner = interaction.user.id === idclass.ownershipID();
       const hasAdmin = interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
       if (!isOwner && !hasAdmin) {
-        await interaction.reply({ content: 'You need Administrator to use setup.', flags: 64 });
+        await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral });
         return;
       }
       const config = await configManager.getOrCreateConfig(interaction.guild);
@@ -65,13 +66,13 @@ const command: Command = {
         .setTimestamp()
         .setFooter({ text: 'Use /setup anytime to refresh.' });
 
-      await interaction.reply({ embeds: [embed], components: [row1], flags: 64 });
+      await interaction.reply({ embeds: [embed], components: [row1], flags: MessageFlags.Ephemeral });
     } catch (error) {
       console.error('Error in setup command:', error);
       try {
         await interaction.reply({
           content: 'Failed to load server configuration. Please try again later.',
-          flags: 64
+          flags: MessageFlags.Ephemeral
         });
       } catch (replyError) {
         console.error('Failed to send error reply:', replyError);

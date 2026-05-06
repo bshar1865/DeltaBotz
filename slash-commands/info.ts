@@ -31,7 +31,7 @@ function formatNumber(value: number): string {
 export default {
     data: new SlashCommandBuilder()
         .setName('info')
-        .setDescription('Displays bot information and system stats.'),
+        .setDescription('View bot details, performance, and useful links.'),
 
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
@@ -47,40 +47,40 @@ export default {
         
         const mainEmbed = new EmbedBuilder()
             .setTitle('DeltaBotz')
-            .setDescription('perhaps useful Discord bot for your servers :)')
+            .setDescription('A moderation-focused Discord bot with setup tools and server utilities.')
             .setThumbnail(bot.user?.displayAvatarURL() || null)
             .addFields(
                 { 
-                    name: 'Status',
+                    name: 'Performance',
                     value: [
-                        `**Uptime:** ${formatUptime(bot.uptime!)}`,
+                        `**Uptime:** ${formatUptime(bot.uptime ?? 0)}`,
                         `**Latency:** ${Math.round(bot.ws.ping)}ms`,
-                        `**RAM:** ${memoryUsage}`
+                        `**Memory:** ${memoryUsage}`
                     ].join('\n'),
                     inline: true
                 },
                 {
-                    name: 'Servers',
-                    value: `${formatNumber(guildCount)}`,
+                    name: 'Reach',
+                    value: `**Servers:** ${formatNumber(guildCount)}`,
                     inline: true
                 },
                 {
-                    name: 'Repository',
+                    name: 'Project',
                     value: [
-                        `**Github:** https://github.com/bshar1865/DeltaBotz`
+                        '**GitHub:** https://github.com/bshar1865/DeltaBotz'
                     ].join('\n')
                 },
                 {
                     name: 'Credits',
                     value: [
                         '**Developer:** Delta Team',
-                        '**Hosted On:** CloudPanel Server (Thanks to @moonpower.)'
+                        '**Hosted On:** CloudPanel Server (thanks to moonpower)'
                     ].join('\n')
                 },
                 {
-                    name: 'Contact',
+                    name: 'Support',
                     value: [
-                        '**Discord:** bshar1865'
+                        `**Support Server:** ${process.env.SUPPORT_SERVER_URL || 'https://discord.gg/u3jQjYmBby'}`
                     ].join('\n')
                 }
             )

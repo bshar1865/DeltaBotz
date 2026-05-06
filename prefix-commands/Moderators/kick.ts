@@ -2,6 +2,8 @@ import { EmbedBuilder, Message, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
+import { canModerateTarget } from '../../utils/canModerateTarget';
+import { MESSAGES } from '../../utils/messages';
 
 export default {
   name: 'kick',
@@ -15,7 +17,7 @@ export default {
     const me = message.guild.members.me;
     if (!me?.permissions.has(PermissionFlagsBits.KickMembers)) {
       return message.reply({
-        content: 'I need Kick Members permission to do that.',
+        content: MESSAGES.common.botMissingPermission('Kick Members'),
         allowedMentions: { parse: [] }
       });
     }
@@ -28,7 +30,7 @@ export default {
 
     if (!hasPermission) {
       return message.reply({
-        content: 'You do not have permission to use this command.',
+        content: MESSAGES.common.noPermission,
         allowedMentions: { parse: [] }
       });
     }
@@ -46,7 +48,7 @@ export default {
     const userId = args[0]?.replace(/[<@!>]/g, '');
     if (!userId) {
       return message.reply({
-        content: 'Please provide a user ID or mention to kick.',
+        content: MESSAGES.moderation.usage.kick,
         allowedMentions: { parse: [] }
       });
     }
@@ -66,18 +68,25 @@ export default {
       if (member.roles.cache.some(role => (config.permissions.moderatorRoles || []).includes(role.id))) {
         const embed = new EmbedBuilder()
           .setColor('Random')
-          .setDescription('You cannot kick mods <a:AK_KannaPiano:1370142206739877959> ');
+          .setDescription(MESSAGES.moderation.cannotActionMods('kick'));
         return message.reply({ embeds: [embed] });
       }
 
+      if (message.member) {
+        const guard = canModerateTarget(message.member, member, message.guild);
+        if (!guard.ok) {
+          return message.reply({ content: guard.reason, allowedMentions: { parse: [] } });
+        }
+      }
+
       try {
-        await member.send(`You have been __**KICKED**__ from **${message.guild.name}** for the following reason: ${reason}`);
+        await member.send(MESSAGES.moderation.dm.kicked(message.guild.name, reason));
       } catch {}
 
       await member.kick(reason);
 
       await message.reply({
-        content: `<@${userId}> has been __**KICKED**__`,
+        content: MESSAGES.moderation.reply.kicked(userId),
         allowedMentions: { parse: [] }
       });
 
@@ -85,7 +94,7 @@ export default {
       const logChannel = message.guild.channels.cache.get(logChannelId);
       if (logChannel && logChannel.isTextBased()) {
         logChannel.send({
-          content: `Action: Kick\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
+          content: MESSAGES.moderation.log.kick(userId, message.author.id, reason),
           allowedMentions: { parse: [] }
         });
       }

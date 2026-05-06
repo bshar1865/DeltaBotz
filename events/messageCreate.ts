@@ -1,12 +1,13 @@
-import { Message, PermissionsBitField, StickerFormatType } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Message, PermissionsBitField, StickerFormatType } from "discord.js";
 import { ExtendedClient } from "../client";
 import { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
 import { logError } from "../utils/errorLogger";
-import { getEmbeddableUrl } from "../prefix-commands/General/embed";
+import { getEmbeddableOptions, getEmbeddableUrl } from "../prefix-commands/General/embed";
 import { deleteUserMessagesLastDay } from "../utils/messageDeletion";
 import { clearPendingStickerCopy, getPendingStickerCopy } from "../utils/pendingStickerCopy";
 import { hasModAccess } from "../utils/permissions";
+import { setAutoEmbedSwitchState } from "../utils/autoEmbedSwitchState";
 
 const defaultPrefix = ".";
 
@@ -130,7 +131,7 @@ async function handleInviteBlock(message: Message, config: any): Promise<boolean
     const logChannel = await message.guild!.channels.fetch(logChannelId).catch(() => null);
     if (logChannel?.isTextBased()) {
       await logChannel.send({
-        content: `Action: Invite Block\nUser: ${message.author.tag} (${message.author.id})\nChannel: <#${message.channel.id}>\nMessage: ${message.content.substring(0, 500)}`,
+        content: `Invite Blocked\nUser: ${message.author.tag} (${message.author.id})\nChannel: <#${message.channel.id}>\nMessage: ${message.content.substring(0, 500)}`,
         allowedMentions: { parse: [] }
       }).catch(() => null);
     }
@@ -219,30 +220,57 @@ async function handleAutoEmbed(message: Message, config: any, serverPrefix: stri
 
   const uniqueUrls = Array.from(new Set(cleanedUrls));
 
-  if (uniqueUrls.length > 0) {
-    const embedLinks: string[] = [];
-    for (const url of uniqueUrls) {
-      try {
-        const embeddableUrl = await getEmbeddableUrl(url);
+  if (uniqueUrls.length === 0) return false;
 
-        if (embeddableUrl) {
-          embedLinks.push(embeddableUrl);
-        }
-      } catch {
-        // Silently fail
-      }
-    }
+  let sentCount = 0;
+  for (const url of uniqueUrls) {
+    if (sentCount >= 3) break;
 
-    if (embedLinks.length > 0) {
-      await message.reply({
-        content: `here is embed:\n${embedLinks.join('\n')}`,
-        allowedMentions: { parse: [] }
+    try {
+      const options = getEmbeddableOptions(url);
+      if (!options) continue;
+
+      const preferred = await getEmbeddableUrl(url);
+      const candidates = options.candidates;
+      const initialUrl = preferred ?? candidates[0];
+      const initialIndex = Math.max(0, candidates.indexOf(initialUrl));
+
+      const buttons =
+        candidates.length > 1
+          ? new ActionRowBuilder<ButtonBuilder>().addComponents(
+              candidates.slice(0, 5).map((candidate, i) => {
+                const host = new URL(candidate).hostname.replace(/^www\./i, "");
+                return new ButtonBuilder()
+                  .setCustomId(`autoembed_set:${i}`)
+                  .setLabel(host)
+                  .setStyle(i === initialIndex ? ButtonStyle.Primary : ButtonStyle.Secondary);
+              })
+            )
+          : undefined;
+
+      const replyMessage = await message.reply({
+        content: `[⠀](${initialUrl})`,
+        components: buttons ? [buttons] : [],
+        allowedMentions: { parse: [] },
       });
-      return true;
+
+      if (candidates.length > 1) {
+        setAutoEmbedSwitchState(replyMessage.id, {
+          authorId: message.author.id,
+          provider: options.provider,
+          candidates,
+          currentIndex: initialIndex,
+          template: "auto",
+        });
+      }
+
+      sentCount++;
+    } catch {
+      // Silently fail
     }
   }
 
-  return false;
+  return sentCount > 0;
 }
 
 async function handleSetPrefix(message: Message, config: any, serverPrefix: string): Promise<boolean> {

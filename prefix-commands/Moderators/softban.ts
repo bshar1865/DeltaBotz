@@ -9,6 +9,8 @@ import {
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
+import { canModerateTarget } from '../../utils/canModerateTarget';
+import { MESSAGES } from '../../utils/messages';
 
 export default {
   name: 'softban',
@@ -21,7 +23,7 @@ export default {
     const me = message.guild?.members.me;
     if (!me?.permissions.has(PermissionFlagsBits.BanMembers)) {
       return message.reply({
-        content: 'I need Ban Members permission to do that.',
+        content: MESSAGES.common.botMissingPermission('Ban Members'),
         allowedMentions: { parse: [] }
       });
     }
@@ -34,7 +36,7 @@ export default {
 
     if (!hasPermission) {
       return message.reply({
-        content: 'You do not have permission to use this command.',
+        content: MESSAGES.common.noPermission,
         allowedMentions: { parse: [] }
       });
     }
@@ -52,7 +54,7 @@ export default {
     const userId = args[0]?.replace(/[<@!>]/g, '');
     if (!userId) {
       return message.reply({
-        content: 'Please provide a user ID or mention to softban.',
+        content: MESSAGES.moderation.usage.softban,
         allowedMentions: { parse: [] }
       });
     }
@@ -70,10 +72,17 @@ export default {
 
       const DevEmbed = new EmbedBuilder()
         .setColor('Random')
-        .setDescription('You cannot softban mods.');
+        .setDescription(MESSAGES.moderation.cannotActionMods('softban'));
 
       if (user.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id))) {
         return message.reply({ embeds: [DevEmbed] });
+      }
+
+      if (message.member) {
+        const guard = canModerateTarget(message.member, user, message.guild!);
+        if (!guard.ok) {
+          return message.reply({ content: guard.reason, allowedMentions: { parse: [] } });
+        }
       }
 
       const allowInvite = Boolean(config.features?.honeypot?.autoUnban);
@@ -103,22 +112,12 @@ export default {
 
       // DM user
       try {
-        const lines = [
-          `Hi, you have been **softbanned** from **${message.guild?.name}** for: ${reason}.`,
-          'If your account was hacked or compromised, please secure it (change your password, enable 2FA).',
-          'Once you\'re safe, you\'re welcome back.'
-        ];
-
-        if (allowInvite && inviteUrl) {
-          lines.push(`Here\'s a server invite you can use to rejoin: ${inviteUrl}`);
-        }
-
-        await user.send(lines.join('\n'));
+        await user.send(MESSAGES.moderation.dm.softban(message.guild?.name || 'this server', reason, allowInvite ? inviteUrl : null));
       } catch {
         const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '');
         if (logChannel && logChannel.isTextBased()) {
           (logChannel as TextChannel).send({
-            content: `Could not send Softban DM to <@${userId}>.`,
+            content: MESSAGES.moderation.log.dmFailedSoftban(userId),
             allowedMentions: { parse: [] }
           });
         }
@@ -127,14 +126,14 @@ export default {
       // Ban
       await user.ban({ reason: `Softban: ${reason}` });
       message.reply({
-        content: `<@${userId}> has been __**SOFTBANNED**__.`,
+        content: MESSAGES.moderation.reply.softbanned(userId),
         allowedMentions: { parse: [] }
       });
 
       const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '');
       if (logChannel && logChannel.isTextBased()) {
         (logChannel as TextChannel).send({
-          content: `Action: Softban\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
+          content: MESSAGES.moderation.log.softban(userId, message.author.id, reason),
           allowedMentions: { parse: [] }
         });
       }
@@ -143,7 +142,7 @@ export default {
       setTimeout(async () => {
         await message.guild?.bans.remove(userId, 'Softban completed');
         message.reply({
-          content: `<@${userId}> has been __**UNBANNED**__ (softban completed).`,
+          content: MESSAGES.moderation.reply.softbanUnbanned(userId),
           allowedMentions: { parse: [] }
         });
       }, 3000);

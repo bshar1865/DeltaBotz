@@ -1,7 +1,24 @@
-import { Message, Client, TextChannel, EmbedBuilder, GuildMember, PermissionFlagsBits } from 'discord.js';
+import { Message, Client, TextChannel, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
+import { canModerateTarget } from '../../utils/canModerateTarget';
+import { MESSAGES } from '../../utils/messages';
+
+function parsePipeList(input: string | undefined): string[] {
+  if (!input) return [];
+  return input
+    .split('|')
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+const BAN_GIFS: string[] = parsePipeList(process.env.BAN_GIFS);
+
+function pickRandom<T>(items: T[]): T | null {
+  if (!items || items.length === 0) return null;
+  return items[Math.floor(Math.random() * items.length)] ?? null;
+}
 
 export default {
   name: 'ban',
@@ -22,7 +39,7 @@ export default {
     const hasPermission = this.checkPermission(message, config);
     if (!hasPermission) {
       return message.reply({
-        content: 'You do not have permission to use this command.',
+        content: MESSAGES.common.noPermission,
         allowedMentions: { parse: [] }
       });
     }
@@ -40,7 +57,7 @@ export default {
     const userId = args[0]?.replace(/[<@!>]/g, '');
     if (!userId) {
       return message.reply({
-        content: 'Please provide a user ID or mention to ban.',
+        content: MESSAGES.moderation.usage.ban,
         allowedMentions: { parse: [] }
       });
     }
@@ -52,7 +69,7 @@ export default {
       const bans = await message.guild?.bans.fetch();
       if (bans?.has(userId)) {
         return message.reply({
-          content: 'This user is already banned.',
+          content: MESSAGES.moderation.alreadyBanned,
           allowedMentions: { parse: [] }
         });
       }
@@ -65,19 +82,26 @@ export default {
         if (guildMember.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id))) {
           const embed = new EmbedBuilder()
             .setColor('Random')
-            .setDescription('You cannot ban mods <a:AK_KannaPiano:1370142206739877959> ');
+            .setDescription(MESSAGES.moderation.cannotActionMods('ban'));
           return message.reply({ embeds: [embed] });
+        }
+
+        if (message.member) {
+          const guard = canModerateTarget(message.member, guildMember, message.guild);
+          if (!guard.ok) {
+            return message.reply({ content: guard.reason, allowedMentions: { parse: [] } });
+          }
         }
 
         // Try to DM user if they're in the server
         try {
-          await guildMember.send(`You have been __**BANNED**__ from **${message.guild?.name}** for the following reason: ${reason}`);
+          await guildMember.send(MESSAGES.moderation.dm.banned(message.guild?.name || 'this server', reason));
         } catch (dmError) {
           const logChannelId = config.logging.logChannelId || '';
           const logChannel = message.guild?.channels.cache.get(logChannelId) as TextChannel | undefined;
           if (logChannel) {
             logChannel.send({
-              content: `Could not send Ban DM to <@${userId}>.`,
+              content: MESSAGES.moderation.log.dmFailedBan(userId),
               allowedMentions: { parse: [] }
             });
           }
@@ -91,22 +115,22 @@ export default {
           await message.guild?.members.ban(userId, { reason });
         } catch (error) {
           return message.reply({
-            content: 'Invalid user ID provided. Please make sure the ID is correct.',
+            content: MESSAGES.common.invalidUserId,
             allowedMentions: { parse: [] }
           });
         }
       }
 
-      await message.reply({
-        content: `<@${userId}> has been __**BANNED**__`,
-        allowedMentions: { parse: [] }
-      });
+      const gifUrl = pickRandom(BAN_GIFS);
+      const content = gifUrl ? `${MESSAGES.moderation.reply.banned(userId)} [⠀](${gifUrl})` : MESSAGES.moderation.reply.banned(userId);
+
+      await message.reply({ content, allowedMentions: { parse: [] } });
 
       const logChannelId = config.logging.logChannelId || '';
       const logChannel = message.guild?.channels.cache.get(logChannelId) as TextChannel | undefined;
       if (logChannel && config.logging.events.banAdd) {
         logChannel.send({
-          content: `Action: Ban\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
+          content: MESSAGES.moderation.log.ban(userId, message.author.id, reason),
           allowedMentions: { parse: [] }
         });
       }

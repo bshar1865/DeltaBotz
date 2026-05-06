@@ -2,6 +2,7 @@ import { Message, GuildMember, TextChannel, ChannelType, PermissionFlagsBits } f
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
+import { MESSAGES } from '../../utils/messages';
 
 export default {
   name: 'purge',
@@ -18,7 +19,7 @@ export default {
 
     if (channel.isTextBased() && !me?.permissionsIn(channel as any).has(PermissionFlagsBits.ManageMessages)) {
       return message.reply({
-        content: 'I need Manage Messages permission to do that.',
+        content: MESSAGES.common.botMissingPermission('Manage Messages'),
         allowedMentions: { parse: [] }
       });
     }
@@ -32,7 +33,7 @@ export default {
 
     if (!hasPermission) {
       return message.reply({
-        content: 'You do not have permission to use this command.',
+        content: MESSAGES.common.noPermission,
         allowedMentions: { parse: [] }
       });
     }
@@ -41,7 +42,7 @@ export default {
     if (remaining > 0) {
       const seconds = Math.ceil(remaining / 1000);
       return message.reply({
-        content: `Please wait ${seconds}s before using this command again.`,
+        content: MESSAGES.common.cooldownWait(seconds),
         allowedMentions: { parse: [] }
       });
     }
@@ -50,7 +51,7 @@ export default {
     const amount = parseInt(args[0]);
     if (isNaN(amount) || amount < 1 || amount > 100) {
       return message.reply({
-        content: 'Please provide a number between 1 and 100 for the amount of messages to delete.',
+        content: MESSAGES.purge.invalidAmount,
         allowedMentions: { parse: [] }
       });
     }
@@ -59,7 +60,7 @@ export default {
       if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement) {
         const deleted = await channel.bulkDelete(amount, true);
         await channel.send({
-          content: `Deleted ${deleted.size} messages.`,
+          content: MESSAGES.purge.deleted(deleted.size),
           allowedMentions: { parse: [] }
         }).catch(() => {});
       }
@@ -67,7 +68,7 @@ export default {
       const modlogChannel = message.guild.channels.cache.get(config.logging.logChannelId || '') as TextChannel;
       if (modlogChannel && modlogChannel.type === ChannelType.GuildText) {
         modlogChannel.send({
-          content: `Action: Purge\nBy: <@${message.author.id}>\nAmount: ${amount}\nChannel: <#${message.channel.id}>`,
+          content: MESSAGES.purge.log(message.author.id, amount, message.channel.id),
           allowedMentions: { parse: [] }
         }).catch(() => {});
       }
@@ -75,7 +76,7 @@ export default {
       console.error(error);
       if (channel.isTextBased() && "send" in channel) {
         (channel as any).send({
-          content: 'I was unable to delete messages. Make sure I have the right permissions.',
+          content: MESSAGES.purge.failed,
           allowedMentions: { parse: [] }
         }).catch(() => {});
       }

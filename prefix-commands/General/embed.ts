@@ -7,15 +7,15 @@ type EmbedProvider = {
 };
 
 const EMBED_PROVIDERS: EmbedProvider[] = [
-  { name: "Twitter/X", matchHosts: ["twitter.com", "x.com"], embedHosts: ["fxtwitter.com"] },
-  { name: "Instagram", matchHosts: ["instagram.com"], embedHosts: ["fxstagram.com"] },
-  { name: "TikTok", matchHosts: ["tiktok.com"], embedHosts: ["tnktok.com"] },
+  { name: "Twitter/X", matchHosts: ["twitter.com", "x.com"], embedHosts: ["fxtwitter.com", "d.xeezz.com"] },
+  { name: "Instagram", matchHosts: ["instagram.com"], embedHosts: ["fxstagram.com", "kkinstagram.com", "ddinstagram.com", "uuinstagram.com", "vxinstagram.com"] },
+  { name: "TikTok", matchHosts: ["tiktok.com"], embedHosts: ["tnktok.com", "d.tiktokez.com"] },
+  { name: "Facebook", matchHosts: ["facebook.com", "fb.watch"], embedHosts: ["fixacebook.com"] },
   { name: "Reddit", matchHosts: ["reddit.com", "redd.it"], embedHosts: ["vxreddit.com"] },
   { name: "Threads", matchHosts: ["threads.net"], embedHosts: ["fixthreads.seria.moe"] },
   { name: "Twitch", matchHosts: ["twitch.tv"], embedHosts: ["fxtwitch.seria.moe"] },
   { name: "Spotify", matchHosts: ["spotify.com"], embedHosts: ["fxspotify.com"] },
-  { name: "DeviantArt", matchHosts: ["deviantart.com"], embedHosts: ["fixdeviantart.com"] },
-  { name: "YouTube", matchHosts: ["youtube.com", "youtu.be"], embedHosts: ["koutube.com"] }
+  { name: "DeviantArt", matchHosts: ["deviantart.com"], embedHosts: ["fixdeviantart.com"] }
 ];
 
 const ALL_EMBED_HOSTS = new Set(EMBED_PROVIDERS.flatMap(p => p.embedHosts));
@@ -35,24 +35,8 @@ function findProvider(host: string): EmbedProvider | null {
   return null;
 }
 
-function normalizeYouTubeUrl(originalUrl: URL): URL {
-  const host = normalizeHost(originalUrl.hostname);
-  if (host.endsWith("youtu.be")) {
-    const videoId = originalUrl.pathname.replace(/^\/+/, "").split("/")[0];
-    if (videoId) {
-      const normalized = new URL("https://www.youtube.com/watch");
-      normalized.searchParams.set("v", videoId);
-      const t = originalUrl.searchParams.get("t");
-      if (t) normalized.searchParams.set("t", t);
-      return normalized;
-    }
-  }
-  return originalUrl;
-}
-
 function buildEmbedUrl(originalUrl: URL, embedHost: string, provider: EmbedProvider): string {
-  const baseUrl = provider.name === "YouTube" ? normalizeYouTubeUrl(originalUrl) : originalUrl;
-  const next = new URL(baseUrl.toString());
+  const next = new URL(originalUrl.toString());
   next.hostname = embedHost;
   return next.toString();
 }
@@ -108,6 +92,30 @@ export async function getEmbeddableUrl(originalUrl: string): Promise<string | nu
   }
 
   return null;
+}
+
+export type EmbeddableOptions = {
+  provider: string;
+  originalUrl: string;
+  candidates: string[];
+};
+
+export function getEmbeddableOptions(originalUrl: string): EmbeddableOptions | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(originalUrl);
+  } catch {
+    return null;
+  }
+
+  const host = normalizeHost(parsed.hostname);
+  if (ALL_EMBED_HOSTS.has(host)) return null;
+
+  const provider = findProvider(host);
+  if (!provider) return null;
+
+  const candidates = provider.embedHosts.map(h => buildEmbedUrl(parsed, h, provider));
+  return { provider: provider.name, originalUrl: parsed.toString(), candidates };
 }
 
 function cleanUrl(input: string): string {

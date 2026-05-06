@@ -1,6 +1,8 @@
 import { Message, GuildMember, EmbedBuilder, TextChannel, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { hasModAccess } from '../../utils/permissions';
+import { canModerateTarget } from '../../utils/canModerateTarget';
+import { MESSAGES } from '../../utils/messages';
 
 export default {
   name: 'warn',
@@ -14,7 +16,7 @@ export default {
     const me = message.guild.members.me;
     if (!me?.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return message.reply({
-        content: 'I need Moderate Members permission to do that.',
+        content: MESSAGES.common.botMissingPermission('Moderate Members'),
         allowedMentions: { parse: [] }
       });
     }
@@ -27,7 +29,7 @@ export default {
 
     if (!hasPermission) {
       return message.reply({
-        content: 'You do not have permission to use this command.',
+        content: MESSAGES.common.noPermission,
         allowedMentions: { parse: [] }
       });
     }
@@ -35,7 +37,7 @@ export default {
     const userId = args[0]?.replace(/[<@!>]/g, '');
     if (!userId) {
       return message.reply({
-        content: 'Please provide a user ID or mention to warn.',
+        content: MESSAGES.moderation.usage.warn,
         allowedMentions: { parse: [] }
       });
     }
@@ -54,24 +56,31 @@ export default {
       if (member.roles.cache.some(role => (config.permissions.moderatorRoles || []).includes(role.id))) {
         const embed = new EmbedBuilder()
           .setColor('Random')
-          .setDescription('You cannot warn mods <a:AK_KannaPiano:1370142206739877959> ');
+          .setDescription(MESSAGES.moderation.cannotActionMods('warn'));
         return message.reply({ embeds: [embed] });
+      }
+
+      if (message.member) {
+        const guard = canModerateTarget(message.member, member, message.guild);
+        if (!guard.ok) {
+          return message.reply({ content: guard.reason, allowedMentions: { parse: [] } });
+        }
       }
 
       const embed = new EmbedBuilder()
         .setColor('Random')
-        .setDescription(`<@${userId}> has been __**WARNED**__`);
+        .setDescription(MESSAGES.moderation.reply.warned(userId));
       await message.reply({ embeds: [embed] });
 
       const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '') as TextChannel;
       if (logChannel && config.logging.events.warn) {
         logChannel.send({
-          content: `Action: Warn\nUser: <@${userId}>\nBy: <@${message.author.id}>\nReason: ${reason}`,
+          content: MESSAGES.moderation.log.warn(userId, message.author.id, reason),
           allowedMentions: { parse: [] }
         });
       }
 
-      member.send(`You have been **__WARNED__** in **${message.guild?.name}** for: **${reason}**`)
+      member.send(MESSAGES.moderation.dm.warned(message.guild?.name || 'this server', reason))
         .catch(() => {});
 
     } catch (error) {

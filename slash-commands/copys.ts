@@ -2,6 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, GuildMember, Permissi
 import configManager from "../utils/ConfigManager";
 import { setPendingStickerCopy } from "../utils/pendingStickerCopy";
 import { hasModAccess } from "../utils/permissions";
+import { MESSAGES } from "../utils/messages";
 
 export default {
   data: new SlashCommandBuilder()
@@ -11,7 +12,7 @@ export default {
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
       return interaction.reply({
-        content: "This command can only be used in a server.",
+        content: MESSAGES.common.guildOnly,
         ephemeral: true
       });
     }
@@ -27,7 +28,7 @@ export default {
 
     if (!hasPermission) {
       return interaction.reply({
-        content: "You do not have permission to use this command.",
+        content: MESSAGES.common.noPermission,
         ephemeral: true
       });
     }
@@ -40,7 +41,7 @@ export default {
     });
 
     return interaction.reply({
-      content: "Send a sticker in this channel within 60 seconds.",
+      content: MESSAGES.copy.copys.prompt,
       ephemeral: true
     });
   },
