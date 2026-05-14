@@ -2,7 +2,6 @@ import {
     Message,
     Client,
     TextChannel,
-    EmbedBuilder,
     PermissionFlagsBits,
     ChannelType
   } from 'discord.js';
@@ -45,7 +44,7 @@ export default {
     if (remaining > 0) {
       const seconds = Math.ceil(remaining / 1000);
       return message.reply({
-        content: `Please wait ${seconds}s before using this command again.`,
+        content: MESSAGES.common.cooldownWait(seconds),
         allowedMentions: { parse: [] }
       });
     }
@@ -59,23 +58,19 @@ export default {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided';
+    const reason = args.slice(1).join(' ') || MESSAGES.moderation.defaultReason;
 
     try {
       const user = await message.guild?.members.fetch(userId).catch(() => null);
       if (!user) {
         return message.reply({
-          content: 'Could not find this user in the server.',
+          content: MESSAGES.moderation.targetNotFound,
           allowedMentions: { parse: [] }
         });
       }
 
-      const DevEmbed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(MESSAGES.moderation.cannotActionMods('softban'));
-
       if (user.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id))) {
-        return message.reply({ embeds: [DevEmbed] });
+        return message.reply({ content: MESSAGES.moderation.cannotActionMods('softban'), allowedMentions: { parse: [] } });
       }
 
       if (message.member) {
@@ -149,7 +144,7 @@ export default {
     } catch (err) {
       console.error(err);
       message.reply({
-        content: 'I was unable to softban user. Please check if the ID is correct.',
+        content: MESSAGES.moderation.errors.softbanFailed,
         allowedMentions: { parse: [] }
       });
     }

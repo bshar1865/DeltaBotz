@@ -140,7 +140,7 @@ export default {
 
       if (embeddableUrl) {
         await message.reply({
-          content: embeddableUrl,
+          content: `[\u2800](${embeddableUrl})`,
           allowedMentions: { parse: [] }
         });
       } else {

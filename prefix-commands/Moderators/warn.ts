@@ -1,4 +1,4 @@
-import { Message, GuildMember, EmbedBuilder, TextChannel, PermissionFlagsBits } from 'discord.js';
+import { Message, TextChannel, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { hasModAccess } from '../../utils/permissions';
 import { canModerateTarget } from '../../utils/canModerateTarget';
@@ -42,22 +42,19 @@ export default {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided';
+    const reason = args.slice(1).join(' ') || MESSAGES.moderation.defaultReason;
 
     try {
       const member = await message.guild.members.fetch(userId).catch(() => null);
       if (!member) {
         return message.reply({
-          content: 'Could not find the specified user in this server.',
+          content: MESSAGES.moderation.targetNotFound,
           allowedMentions: { parse: [] }
         });
       }
 
       if (member.roles.cache.some(role => (config.permissions.moderatorRoles || []).includes(role.id))) {
-        const embed = new EmbedBuilder()
-          .setColor('Random')
-          .setDescription(MESSAGES.moderation.cannotActionMods('warn'));
-        return message.reply({ embeds: [embed] });
+        return message.reply({ content: MESSAGES.moderation.cannotActionMods('warn'), allowedMentions: { parse: [] } });
       }
 
       if (message.member) {
@@ -67,10 +64,7 @@ export default {
         }
       }
 
-      const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(MESSAGES.moderation.reply.warned(userId));
-      await message.reply({ embeds: [embed] });
+      await message.reply({ content: MESSAGES.moderation.reply.warned(userId), allowedMentions: { parse: [] } });
 
       const logChannel = message.guild?.channels.cache.get(config.logging.logChannelId || '') as TextChannel;
       if (logChannel && config.logging.events.warn) {
@@ -86,7 +80,7 @@ export default {
     } catch (error) {
       console.error(error);
       message.reply({
-        content: 'I was unable to warn user. Please check if the ID is correct.',
+        content: MESSAGES.moderation.errors.warnFailed,
         allowedMentions: { parse: [] }
       });
     }

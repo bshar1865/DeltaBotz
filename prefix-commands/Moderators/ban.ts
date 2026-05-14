@@ -1,4 +1,4 @@
-import { Message, Client, TextChannel, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { Message, Client, TextChannel, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
@@ -48,7 +48,7 @@ export default {
     if (remaining > 0) {
       const seconds = Math.ceil(remaining / 1000);
       return message.reply({
-        content: `Please wait ${seconds}s before using this command again.`,
+        content: MESSAGES.common.cooldownWait(seconds),
         allowedMentions: { parse: [] }
       });
     }
@@ -62,7 +62,7 @@ export default {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided';
+    const reason = args.slice(1).join(' ') || MESSAGES.moderation.defaultReason;
 
     try {
       // Check if user is already banned
@@ -80,10 +80,7 @@ export default {
       // If user is in server, check for protected roles
       if (guildMember) {
         if (guildMember.roles.cache.some(role => (config.permissions.moderatorRoles||[]).includes(role.id))) {
-          const embed = new EmbedBuilder()
-            .setColor('Random')
-            .setDescription(MESSAGES.moderation.cannotActionMods('ban'));
-          return message.reply({ embeds: [embed] });
+          return message.reply({ content: MESSAGES.moderation.cannotActionMods('ban'), allowedMentions: { parse: [] } });
         }
 
         if (message.member) {
@@ -138,10 +135,9 @@ export default {
     } catch (error) {
       console.error(error);
       message.reply({
-        content: 'I was unable to ban user. Please check if the ID is correct or if user is already banned.',
+        content: MESSAGES.moderation.errors.banFailed,
         allowedMentions: { parse: [] }
       });
     }
   }
 };
-

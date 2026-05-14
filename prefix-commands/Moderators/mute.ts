@@ -1,4 +1,4 @@
-import { EmbedBuilder, Message, PermissionFlagsBits, TextChannel } from 'discord.js';
+import { Message, PermissionFlagsBits, TextChannel } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
@@ -39,7 +39,7 @@ export default {
     if (remaining > 0) {
       const seconds = Math.ceil(remaining / 1000);
       return message.reply({
-        content: `Please wait ${seconds}s before using this command again.`,
+        content: MESSAGES.common.cooldownWait(seconds),
         allowedMentions: { parse: [] }
       });
     }
@@ -47,28 +47,19 @@ export default {
 
     const userId = args[0]?.replace(/[<@!>]/g, '');
     if (!userId) {
-      const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(MESSAGES.moderation.usage.muteUser);
-      return message.reply({ embeds: [embed] });
+      return message.reply({ content: MESSAGES.moderation.usage.muteUser, allowedMentions: { parse: [] } });
     }
 
     const duration = args[1];
     if (!duration) {
-      const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(MESSAGES.moderation.usage.muteDuration);
-      return message.reply({ embeds: [embed] });
+      return message.reply({ content: MESSAGES.moderation.usage.muteDuration, allowedMentions: { parse: [] } });
     }
 
-    const reason = args.slice(2).join(' ') || 'No reason provided';
+    const reason = args.slice(2).join(' ') || MESSAGES.moderation.defaultReason;
 
     const match = duration.match(/^(\d+)(s|m|h|d)$/);
     if (!match) {
-      const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(MESSAGES.moderation.usage.muteBadDuration);
-      return message.reply({ embeds: [embed] });
+      return message.reply({ content: MESSAGES.moderation.usage.muteBadDuration, allowedMentions: { parse: [] } });
     }
 
     const amount = parseInt(match[1]);
@@ -77,27 +68,18 @@ export default {
 
     const maxTimeoutMs = 28 * 24 * 60 * 60 * 1000; // Discord timeout limit (28 days)
     if (durationMs > maxTimeoutMs) {
-      const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(MESSAGES.moderation.usage.muteTooLong);
-      return message.reply({ embeds: [embed] });
+      return message.reply({ content: MESSAGES.moderation.usage.muteTooLong, allowedMentions: { parse: [] } });
     }
 
     try {
       const member = await message.guild.members.fetch(userId).catch(() => null);
 
       if (!member) {
-        const embed = new EmbedBuilder()
-          .setColor('Random')
-          .setDescription('Could not find the specified user in this server.');
-        return message.reply({ embeds: [embed] });
+        return message.reply({ content: MESSAGES.moderation.targetNotFound, allowedMentions: { parse: [] } });
       }
 
       if (member.roles.cache.some(role => (config.permissions.moderatorRoles || []).includes(role.id))) {
-        const embed = new EmbedBuilder()
-          .setColor('Random')
-          .setDescription(MESSAGES.moderation.cannotActionMods('mute'));
-        return message.reply({ embeds: [embed] });
+        return message.reply({ content: MESSAGES.moderation.cannotActionMods('mute'), allowedMentions: { parse: [] } });
       }
 
       if (message.member) {
@@ -109,10 +91,7 @@ export default {
 
       await member.timeout(durationMs, reason);
 
-      const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(MESSAGES.moderation.reply.muted(userId, duration, reason));
-      await message.reply({ embeds: [embed] });
+      await message.reply({ content: MESSAGES.moderation.reply.muted(userId, duration, reason), allowedMentions: { parse: [] } });
 
       const logChannel = message.guild.channels.cache.get(config.logging.logChannelId || '') as TextChannel;
       if (logChannel?.type === 0) {
@@ -140,10 +119,7 @@ export default {
 
     } catch (error) {
       console.error(error);
-      const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription('I was unable to mute this user. Make sure I have permission and the user is valid.');
-      message.reply({ embeds: [embed] });
+      message.reply({ content: MESSAGES.moderation.errors.muteFailed, allowedMentions: { parse: [] } });
     }
   }
 };

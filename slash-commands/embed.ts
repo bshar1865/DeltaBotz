@@ -55,7 +55,7 @@ export default {
         : undefined;
 
     await interaction.editReply({
-      content: initialUrl,
+      content: `[⠀](${initialUrl})`,
       components: buttons ? [buttons] : [],
       allowedMentions: { parse: [] },
     });

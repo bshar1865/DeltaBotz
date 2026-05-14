@@ -1,4 +1,4 @@
-import { EmbedBuilder, Message, PermissionFlagsBits } from 'discord.js';
+import { Message, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
@@ -39,7 +39,7 @@ export default {
     if (remaining > 0) {
       const seconds = Math.ceil(remaining / 1000);
       return message.reply({
-        content: `Please wait ${seconds}s before using this command again.`,
+        content: MESSAGES.common.cooldownWait(seconds),
         allowedMentions: { parse: [] }
       });
     }
@@ -53,23 +53,20 @@ export default {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided';
+    const reason = args.slice(1).join(' ') || MESSAGES.moderation.defaultReason;
 
     try {
       const member = await message.guild.members.fetch(userId).catch(() => null);
 
       if (!member) {
         return message.reply({
-          content: 'Could not find the specified user in this server.',
+          content: MESSAGES.moderation.targetNotFound,
           allowedMentions: { parse: [] }
         });
       }
 
       if (member.roles.cache.some(role => (config.permissions.moderatorRoles || []).includes(role.id))) {
-        const embed = new EmbedBuilder()
-          .setColor('Random')
-          .setDescription(MESSAGES.moderation.cannotActionMods('kick'));
-        return message.reply({ embeds: [embed] });
+        return message.reply({ content: MESSAGES.moderation.cannotActionMods('kick'), allowedMentions: { parse: [] } });
       }
 
       if (message.member) {
@@ -102,7 +99,7 @@ export default {
     } catch (error) {
       console.error(error);
       message.reply({
-        content: 'I was unable to kick user. Please check if the ID is correct or if user is still in the server.',
+        content: MESSAGES.moderation.errors.kickFailed,
         allowedMentions: { parse: [] }
       });
     }

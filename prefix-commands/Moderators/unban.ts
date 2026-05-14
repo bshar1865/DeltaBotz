@@ -1,4 +1,4 @@
-import { Message, GuildMember, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { Message, PermissionFlagsBits } from 'discord.js';
 import configManager from '../../utils/ConfigManager';
 import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
 import { hasModAccess } from '../../utils/permissions';
@@ -38,7 +38,7 @@ export default {
     if (remaining > 0) {
       const seconds = Math.ceil(remaining / 1000);
       return message.reply({
-        content: `Please wait ${seconds}s before using this command again.`,
+        content: MESSAGES.common.cooldownWait(seconds),
         allowedMentions: { parse: [] }
       });
     }
@@ -52,13 +52,13 @@ export default {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided';
+    const reason = args.slice(1).join(' ') || MESSAGES.moderation.defaultReason;
 
     try {
       const bannedUsers = await message.guild?.bans.fetch();
       if (!bannedUsers?.has(userId)) {
         return message.reply({
-          content: 'This user is not banned.',
+          content: MESSAGES.moderation.notBanned,
           allowedMentions: { parse: [] }
         });
       }
@@ -81,7 +81,7 @@ export default {
     } catch (error) {
       console.error(error);
       message.reply({
-        content: 'I was unable to unban user. Please check if the ID is correct.',
+        content: MESSAGES.moderation.errors.unbanFailed,
         allowedMentions: { parse: [] }
       });
     }

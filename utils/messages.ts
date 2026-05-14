@@ -12,6 +12,18 @@ export const MESSAGES = {
   moderation: {
     cannotActionMods: (action: string) => `You cannot ${action} mods <a:AK_KannaPiano:1370142206739877959> `,
     alreadyBanned: "This user is already banned.",
+    defaultReason: "No reason provided",
+    targetNotFound: "Could not find the specified user in this server.",
+    notBanned: "This user is not banned.",
+
+    errors: {
+      banFailed: "I was unable to ban the user. Please check the ID and make sure I have permission.",
+      kickFailed: "I was unable to kick the user. Please check the ID and make sure the user is still in the server.",
+      warnFailed: "I was unable to warn the user. Please check the ID and make sure I have permission.",
+      softbanFailed: "I was unable to softban the user. Please check the ID and make sure I have permission.",
+      muteFailed: "I was unable to mute the user. Make sure I have permission and the user is valid.",
+      unbanFailed: "I was unable to unban the user. Please check the ID and make sure I have permission.",
+    },
 
     guard: {
       self: "You can't moderate yourself. <a:AK_KannaPiano:1370142206739877959>",
@@ -44,8 +56,8 @@ export const MESSAGES = {
       unbanned: (userId: Id) => `<@${userId}> has been __**UNBANNED**__`,
       warned: (userId: Id) => `<@${userId}> has been __**WARNED**__`,
       muted: (userId: Id, duration: string, reason: string) =>
-        `Muted <@${userId}> for **${duration}** due to: **${reason}**`,
-      unmutedLog: (userId: Id, actorId: Id) => `Action: Unmute\nUser: <@${userId}>\nBy: <@${actorId}>`,
+        `<@${userId}> has been __**MUTED**__ for **${duration}** due to: **${reason}**`,
+      unmutedLog: (userId: Id, actorId: Id) => `<@${userId}> has been __**UNMUTED**__ by <@${actorId}>`,
     },
 
     dm: {
@@ -92,7 +104,7 @@ export const MESSAGES = {
     deleted: (count: number) => `Deleted ${count} messages.`,
     failed: "I was unable to delete messages. Make sure I have the right permissions.",
     log: (actorId: Id, amount: number, channelId: Id) =>
-      `Action: Purge\nBy: <@${actorId}>\nAmount: ${amount}\nChannel: <#${channelId}>`,
+      `<@${actorId}> has __**PURGED**__ ** ${amount}** messages in <#${channelId}>`,
   },
 
   roles: {
@@ -107,13 +119,13 @@ export const MESSAGES = {
     assignError: "An error occurred while assigning roles.",
     removeError: "An error occurred while removing roles.",
     logGiveRole: (targetId: Id, actorId: Id, roleNames: string[]) =>
-      `Action: Give Role\nUser: <@${targetId}>\nBy: <@${actorId}>\nRoles: ${roleNames.join(", ")}`,
+      `<@${targetId}> has been __**GIVEN**__ the role(s): ${roleNames.join(", ")}`,
     logGiveRoleError: (targetId: Id, actorId: Id) =>
-      `Action: Give Role (Error)\nUser: <@${targetId}>\nBy: <@${actorId}>`,
+      `<@${targetId}> failed to receive the role(s) from <@${actorId}>`,
     logRemoveRole: (targetId: Id, actorId: Id, roleNames: string[]) =>
-      `Action: Remove Role\nUser: <@${targetId}>\nBy: <@${actorId}>\nRoles: ${roleNames.join(", ")}`,
+      `<@${targetId}> has been __**REMOVED**__ from the role(s): ${roleNames.join(", ")}`,
     logRemoveRoleError: (targetId: Id, actorId: Id) =>
-      `Action: Remove Role (Error)\nUser: <@${targetId}>\nBy: <@${actorId}>`,
+      `<@${targetId}> failed to __**REMOVE**__ the role(s) from <@${actorId}>`,
   },
 
   copy: {
