@@ -87,9 +87,15 @@ export class ConfigManager {
       prefix: '.',
       logging: {
         enabled: true,
+        webhooks: {
+          moderation: {},
+          members: {},
+          messages: {},
+        },
         events: {
           messageDelete: true,
           messageEdit: true,
+          reactionRemove: true,
           memberJoin: true,
           memberLeave: true,
           memberUpdate: true,
@@ -293,7 +299,33 @@ export class ConfigManager {
     if (!validated.updatedAt) validated.updatedAt = new Date().toISOString();
 
     // Ensure nested objects exist
-    if (!validated.logging) validated.logging = DEFAULT_CONFIG.logging!;
+    if (!validated.logging) validated.logging = DEFAULT_CONFIG.logging! as any;
+
+    // Logging: ensure nested defaults exist without clobbering existing settings
+    const defaultLogging = (DEFAULT_CONFIG.logging || {}) as any;
+    validated.logging.events = {
+      ...(defaultLogging.events || {}),
+      ...(validated.logging.events || {}),
+    };
+
+    // Migrate legacy per-section channel IDs into webhook section configs (channel only).
+    if (!validated.logging.webhooks) validated.logging.webhooks = {};
+    const legacyModChannelId = validated.logging.moderationLogChannelId || validated.logging.logChannelId;
+    const legacyMemberChannelId = validated.logging.memberLogChannelId;
+    const legacyMessageChannelId = validated.logging.messageLogChannelId;
+
+    validated.logging.webhooks.moderation = {
+      ...(validated.logging.webhooks.moderation || {}),
+      channelId: (validated.logging.webhooks.moderation?.channelId || legacyModChannelId),
+    };
+    validated.logging.webhooks.members = {
+      ...(validated.logging.webhooks.members || {}),
+      channelId: (validated.logging.webhooks.members?.channelId || legacyMemberChannelId),
+    };
+    validated.logging.webhooks.messages = {
+      ...(validated.logging.webhooks.messages || {}),
+      channelId: (validated.logging.webhooks.messages?.channelId || legacyMessageChannelId),
+    };
     if (!validated.permissions) validated.permissions = DEFAULT_CONFIG.permissions!;
     if (validated.permissions.moderatorCommandsEnabled === undefined) {
       validated.permissions.moderatorCommandsEnabled = true;

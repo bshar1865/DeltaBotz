@@ -52,7 +52,6 @@ Use `/setup` in Discord to configure the bot with an interactive menu:
 - **Welcome & Role restoration** - Welcome, Goodbye, and Role Restore
 - **Others** - Auto Embed and Invite Block
 
-Note: For best experience, use the Discord desktop app; some buttons may not display on mobile.
 
 ## Data Layout
 

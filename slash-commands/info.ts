@@ -86,7 +86,7 @@ export default {
             )
             .setColor('Random')
             .setTimestamp()
-            .setFooter({ text: 'Tip: Use /setup to configure features' });
+            .setFooter({ text: 'Why not give our repo a star? 👀' });
 
         await interaction.editReply({ embeds: [mainEmbed] });
     },

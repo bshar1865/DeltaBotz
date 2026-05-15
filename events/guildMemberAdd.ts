@@ -3,6 +3,7 @@ import { Event } from '../types';
 import { getGuildDB } from '../utils/db';
 import configManager from '../utils/ConfigManager';
 import { ServerConfig } from '../types/config';
+import { sendLogEmbed } from '../utils/logWebhooks';
 
 const event: Event = {
   name: Events.GuildMemberAdd,
@@ -11,6 +12,8 @@ const event: Event = {
     const config = await configManager.getOrCreateConfig(member.guild);
     
     // Restore roles if enabled
+    let restoredRoleIds: string[] = [];
+    let failedRoleIds: string[] = [];
     if (config.features.roleRestore.enabled) {
       const gdb = getGuildDB(member.guild.id);
       const roleIds: string[] | null = await gdb.get(`roles_${member.id}_${member.guild.id}`);
@@ -23,9 +26,13 @@ const event: Event = {
           if (role && member.guild.members.me?.roles.highest.position > role.position) {
             try {
               await member.roles.add(roleId);
+              restoredRoleIds.push(roleId);
             } catch (err) {
               console.warn(`Could not restore role ${roleId}:`, err);
+              failedRoleIds.push(roleId);
             }
+          } else {
+            failedRoleIds.push(roleId);
           }
         }
         await gdb.delete(`roles_${member.id}_${member.guild.id}`);
@@ -56,7 +63,27 @@ const event: Event = {
       }
     }
 
-    // Do not log join here; welcome feature handles member joins
+    // Webhook member join logs (separate from public welcome message)
+    if (config.logging?.enabled && config.logging.events?.memberJoin) {
+      const restoredShown = restoredRoleIds.slice(0, 50).map(r => `<@&${r}>`).join(', ');
+      const failedShown = failedRoleIds.slice(0, 50).map(r => `<@&${r}>`).join(', ');
+
+      const restoredText = restoredShown.length ? restoredShown : 'None';
+      const failedText = failedShown.length ? failedShown : 'None';
+
+      await sendLogEmbed(member.guild, config, 'members', {
+        title: 'Member Joined',
+        color: 0x57f287,
+        fields: [
+          { name: 'User', value: `${member.user ? `<@${member.user.id}>` : member.id} (${member.id})`, inline: false },
+          { name: 'Account', value: member.user ? `${member.user.tag}` : 'Unknown', inline: true },
+          { name: 'Role Restore', value: config.features.roleRestore.enabled ? 'Enabled' : 'Disabled', inline: true },
+          { name: 'Restored Roles', value: restoredText.length > 1024 ? `${restoredText.slice(0, 1021)}...` : restoredText, inline: false },
+          { name: 'Failed/Skipped Roles', value: failedText.length > 1024 ? `${failedText.slice(0, 1021)}...` : failedText, inline: false },
+        ],
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    }
   },
 };
 

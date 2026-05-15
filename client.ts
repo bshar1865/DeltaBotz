@@ -10,11 +10,12 @@ const clientConfig: ClientOptions = {
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers
     ],
-    partials: [Partials.Channel]
+    partials: [Partials.Channel, Partials.Message, Partials.Reaction, Partials.User]
 };
 
 export const client = new Client(clientConfig) as ExtendedClient;

@@ -3,21 +3,22 @@ import { Event } from '../types';
 import { getGuildDB } from '../utils/db';
 import configManager from '../utils/ConfigManager';
 import { ServerConfig } from '../types/config';
+import { sendLogEmbed } from '../utils/logWebhooks';
 
 const event: Event = {
   name: Events.GuildMemberRemove,
   async execute(member: GuildMember) {
     // Get server configuration
     const config = await configManager.getOrCreateConfig(member.guild);
+
+    const leftRoles = member.roles.cache
+      .filter(r => !r.managed && r.id !== member.guild.id)
+      .map(r => r.id);
     
     // Store roles for restoration if enabled
     if (config.features.roleRestore.enabled) {
       const gdb = getGuildDB(member.guild.id);
-      const roleIds = member.roles.cache
-        .filter(r => !r.managed && r.id !== member.guild.id)
-        .map(r => r.id);
-
-      await gdb.set(`roles_${member.id}_${member.guild.id}`, roleIds);
+      await gdb.set(`roles_${member.id}_${member.guild.id}`, leftRoles);
     }
 
     // Send goodbye message if enabled
@@ -31,7 +32,22 @@ const event: Event = {
       }
     }
 
-    // Do not log leave here; goodbye feature handles member leaves
+    // Webhook member leave logs (separate from public goodbye message)
+    if (config.logging?.enabled && config.logging.events?.memberLeave) {
+      const rolesShown = leftRoles.slice(0, 50).map(r => `<@&${r}>`).join(', ');
+      const rolesText = rolesShown.length ? rolesShown : 'None';
+      await sendLogEmbed(member.guild, config, 'members', {
+        title: 'Member Left',
+        color: 0xed4245,
+        fields: [
+          { name: 'User', value: `${member.user ? `<@${member.user.id}>` : member.id} (${member.id})`, inline: false },
+          { name: 'Account', value: member.user ? `${member.user.tag}` : 'Unknown', inline: true },
+          { name: 'Stored for Restore', value: config.features.roleRestore.enabled ? 'Yes' : 'No', inline: true },
+          { name: 'Roles (snapshot)', value: rolesText.length > 1024 ? `${rolesText.slice(0, 1021)}...` : rolesText, inline: false },
+        ],
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    }
   },
 };
 

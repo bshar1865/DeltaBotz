@@ -22,9 +22,27 @@ export interface LoggingConfig {
   memberLogChannelId?: string;
   messageLogChannelId?: string;
   voiceLogChannelId?: string;
+  webhooks?: {
+    moderation?: {
+      channelId?: string;
+      id?: string;
+      token?: string;
+    };
+    members?: {
+      channelId?: string;
+      id?: string;
+      token?: string;
+    };
+    messages?: {
+      channelId?: string;
+      id?: string;
+      token?: string;
+    };
+  };
   events: {
     messageDelete: boolean;
     messageEdit: boolean;
+    reactionRemove: boolean;
     memberJoin: boolean;
     memberLeave: boolean;
     memberUpdate: boolean;
@@ -175,6 +193,7 @@ export const DEFAULT_CONFIG: Partial<ServerConfig> = {
     events: {
       messageDelete: true,
       messageEdit: true,
+      reactionRemove: true,
       memberJoin: true,
       memberLeave: true,
       memberUpdate: true,
