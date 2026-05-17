@@ -1,5 +1,4 @@
 import { Client, Events, TextChannel, DMChannel, NewsChannel, ActivityType } from 'discord.js';
-import idclass from '../utils/idclass';
 
 const startTime = Date.now();
 
@@ -14,18 +13,23 @@ export default {
     console.log(`Startup time: ${startupTime}s`);
     client.user?.setActivity('DeltaBotz', { type: ActivityType.Watching });
 
-    const logChannel = await client.channels.fetch(idclass.channelErrorLogs()).catch(() => null);
-    if (
-      logChannel &&
-      (logChannel instanceof TextChannel ||
-        logChannel instanceof DMChannel ||
-        logChannel instanceof NewsChannel)
-    ) {
-      await logChannel.send(
-        `${client.user!.tag} has been logged in successfully\nStartup Time: \`${startupTime}s\``
-      );
+    const errorLogChannelId = process.env.ERROR_LOG_CHANNEL_ID || '';
+    if (errorLogChannelId) {
+      const logChannel = await client.channels.fetch(errorLogChannelId).catch(() => null);
+      if (
+        logChannel &&
+        (logChannel instanceof TextChannel ||
+          logChannel instanceof DMChannel ||
+          logChannel instanceof NewsChannel)
+      ) {
+        await logChannel.send(
+          `${client.user!.tag} has been logged in successfully\nStartup Time: \`${startupTime}s\``
+        );
+      } else {
+        console.error('Failed to fetch the configured error log channel on startup');
+      }
     } else {
-      console.error('Failed to fetch error log channel on startup');
+      console.log('No ERROR_LOG_CHANNEL_ID configured; skipping startup log channel message.');
     }
   }
 };

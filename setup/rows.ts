@@ -7,7 +7,6 @@ import {
   RoleSelectMenuBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
-  type ButtonInteraction,
 } from "discord.js";
 import { buildSetupMenuRow } from "../utils/setupUi";
 
@@ -34,7 +33,7 @@ export function buildPrefixRows(includeBack?: boolean) {
 
   const resetPrefixButton = new ButtonBuilder()
     .setCustomId("reset_prefix")
-    .setLabel("Reset to Default")
+    .setLabel("Reset")
     .setStyle(ButtonStyle.Secondary);
 
   const rows: any[] = [new ActionRowBuilder<ButtonBuilder>().addComponents(changePrefixButton, resetPrefixButton)];
@@ -85,28 +84,37 @@ export function buildLoggingRows(includeBack?: boolean) {
 }
 
 export function buildHoneypotRows(includeBack?: boolean) {
+  const toggleHoneypot = new ButtonBuilder()
+    .setCustomId("toggle_honeypot")
+    .setLabel("Toggle Honeypot")
+    .setStyle(ButtonStyle.Primary);
+  const toggleAutoUnban = new ButtonBuilder()
+    .setCustomId("toggle_honeypot_autounban")
+    .setLabel("Toggle Auto Unban")
+    .setStyle(ButtonStyle.Secondary);
   const honeypotSelect = new ChannelSelectMenuBuilder()
     .setCustomId("setup_honeypot_channel")
     .setChannelTypes(ChannelType.GuildText)
-    .setPlaceholder("Select Honeypot channel")
+    .setPlaceholder("Select honeypot channel")
     .setMinValues(0)
     .setMaxValues(1);
-  const toggles = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId("toggle_honeypot_autounban").setLabel("Toggle Auto-unban").setStyle(ButtonStyle.Secondary),
-  );
-  const rows: any[] = [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(honeypotSelect), toggles];
+
+  const rows: any[] = [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(toggleHoneypot, toggleAutoUnban),
+    new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(honeypotSelect),
+  ];
   if (includeBack) rows.push(backRow());
   return rows;
 }
 
 export function buildWelcomeRows(includeBack?: boolean) {
-  const toggle = new ButtonBuilder().setCustomId("toggle_welcome").setLabel("Toggle Welcome").setStyle(ButtonStyle.Secondary);
-  const edit = new ButtonBuilder().setCustomId("edit_welcome_embed").setLabel("Edit Embed").setStyle(ButtonStyle.Primary);
-  const reset = new ButtonBuilder().setCustomId("reset_welcome_embed").setLabel("Reset Embed").setStyle(ButtonStyle.Secondary);
+  const toggle = new ButtonBuilder().setCustomId("toggle_welcome").setLabel("Toggle Welcome").setStyle(ButtonStyle.Primary);
+  const edit = new ButtonBuilder().setCustomId("edit_welcome_embed").setLabel("Edit Embed").setStyle(ButtonStyle.Secondary);
+  const reset = new ButtonBuilder().setCustomId("reset_welcome_embed").setLabel("Reset").setStyle(ButtonStyle.Secondary);
   const channel = new ChannelSelectMenuBuilder()
     .setCustomId("setup_welcome_channel")
     .setChannelTypes(ChannelType.GuildText)
-    .setPlaceholder("Select Welcome channel")
+    .setPlaceholder("Select welcome channel")
     .setMinValues(0)
     .setMaxValues(1);
   const rows: any[] = [
@@ -118,13 +126,13 @@ export function buildWelcomeRows(includeBack?: boolean) {
 }
 
 export function buildGoodbyeRows(includeBack?: boolean) {
-  const toggle = new ButtonBuilder().setCustomId("toggle_goodbye").setLabel("Toggle Goodbye").setStyle(ButtonStyle.Secondary);
-  const edit = new ButtonBuilder().setCustomId("edit_goodbye_embed").setLabel("Edit Embed").setStyle(ButtonStyle.Primary);
-  const reset = new ButtonBuilder().setCustomId("reset_goodbye_embed").setLabel("Reset Embed").setStyle(ButtonStyle.Secondary);
+  const toggle = new ButtonBuilder().setCustomId("toggle_goodbye").setLabel("Toggle Goodbye").setStyle(ButtonStyle.Primary);
+  const edit = new ButtonBuilder().setCustomId("edit_goodbye_embed").setLabel("Edit Embed").setStyle(ButtonStyle.Secondary);
+  const reset = new ButtonBuilder().setCustomId("reset_goodbye_embed").setLabel("Reset").setStyle(ButtonStyle.Secondary);
   const channel = new ChannelSelectMenuBuilder()
     .setCustomId("setup_goodbye_channel")
     .setChannelTypes(ChannelType.GuildText)
-    .setPlaceholder("Select Goodbye channel")
+    .setPlaceholder("Select goodbye channel")
     .setMinValues(0)
     .setMaxValues(1);
   const rows: any[] = [

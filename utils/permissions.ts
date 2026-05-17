@@ -1,5 +1,4 @@
 import { GuildMember, PermissionResolvable, PermissionsBitField } from "discord.js";
-import idclass from "./idclass";
 
 export function hasAnyPermission(
   member: GuildMember | null | undefined,
@@ -23,9 +22,10 @@ export function hasModAccess(
 
   if (isAdmin(member)) return true;
 
+  const botOwnerId = process.env.BOT_OWNER_ID || process.env.OWNER_ID || "";
   const isOwner =
     userId === config.permissions.ownerId ||
-    userId === idclass.ownershipID();
+    (botOwnerId ? userId === botOwnerId : false);
   if (isOwner) return true;
 
   if (hasAnyPermission(member, requiredPermissions)) return true;

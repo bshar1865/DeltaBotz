@@ -3,11 +3,12 @@ import { ExtendedClient } from "../client";
 import { getGuildDB } from "../utils/db";
 import configManager from "../utils/ConfigManager";
 import { logError } from "../utils/errorLogger";
-import { getEmbeddableOptions, getEmbeddableUrl } from "../prefix-commands/General/embed";
+import { getEmbeddableOptions, getEmbeddableUrl } from "../commands/prefix/General/embed";
 import { deleteUserMessagesLastDay } from "../utils/messageDeletion";
 import { clearPendingStickerCopy, getPendingStickerCopy } from "../utils/pendingStickerCopy";
 import { hasModAccess } from "../utils/permissions";
 import { setAutoEmbedSwitchState } from "../utils/autoEmbedSwitchState";
+import { saveMessageHistory } from "../utils/messageHistory";
 
 const defaultPrefix = ".";
 
@@ -354,7 +355,7 @@ async function handlePrefixCommand(message: Message, client: ExtendedClient, con
         );
       } catch {}
       message.reply({
-        content: process.env.ERR,
+        content: process.env.ERR || 'Something went wrong while executing the command.',
         allowedMentions: { parse: [] },
       });
     }
@@ -366,6 +367,7 @@ export default {
   once: false,
   async execute(message: Message, client: ExtendedClient) {
     if (message.inGuild()) {
+      await saveMessageHistory(message);
       const config = await configManager.getOrCreateConfig(message.guild);
       await handleHoneypot(message, config);
       const serverPrefix = config.prefix || defaultPrefix;

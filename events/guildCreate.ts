@@ -1,12 +1,13 @@
 import { Client, Events, Guild, TextChannel, DMChannel, NewsChannel, EmbedBuilder } from 'discord.js';
 import { Event } from '../types';
-import idclass from '../utils/idclass';
 
 const event: Event = {
   name: Events.GuildCreate,
   async execute(guild: Guild, client: Client) {
     try {
-      const logChannel = await client.channels.fetch(idclass.channelGuildLogs()).catch(() => null);
+      const guildLogChannelId = process.env.GUILD_LOG_CHANNEL_ID || '';
+      if (!guildLogChannelId) return;
+      const logChannel = await client.channels.fetch(guildLogChannelId).catch(() => null);
       if (logChannel && (logChannel instanceof TextChannel || logChannel instanceof DMChannel || logChannel instanceof NewsChannel)) {
         // Fetch full guild data to get banner
         const fullGuild = await guild.fetch().catch(() => guild);

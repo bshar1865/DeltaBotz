@@ -1,8 +1,8 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, GuildMember, PermissionFlagsBits } from "discord.js";
-import configManager from "../utils/ConfigManager";
-import { setPendingStickerCopy } from "../utils/pendingStickerCopy";
-import { hasModAccess } from "../utils/permissions";
-import { MESSAGES } from "../utils/messages";
+import configManager from "../../utils/ConfigManager";
+import { setPendingStickerCopy } from "../../utils/pendingStickerCopy";
+import { hasModAccess } from "../../utils/permissions";
+import { MESSAGES } from "../../utils/messages";
 
 export default {
   data: new SlashCommandBuilder()

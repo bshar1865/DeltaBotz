@@ -1,5 +1,4 @@
 import { TextChannel, DMChannel, NewsChannel, Guild } from 'discord.js';
-import idclass from './idclass';
 
 interface ErrorLogOptions {
     error: Error | string;
@@ -58,7 +57,12 @@ export async function logErrorToChannel(
             return;
         }
 
-        const logChannel = await client.channels.fetch(idclass.channelErrorLogs());
+        const logChannelId = process.env.ERROR_LOG_CHANNEL_ID || '';
+        if (!logChannelId) {
+            console.error('No ERROR_LOG_CHANNEL_ID set for error logging');
+            return;
+        }
+        const logChannel = await client.channels.fetch(logChannelId).catch(() => null);
         if (!logChannel) {
             console.error('Failed to fetch log channel - channel not found');
             return;
@@ -100,7 +104,7 @@ export async function logErrorToChannel(
     } catch (err) {
         console.error('Failed to log error to channel:', err);
         console.error('Original error:', error);
-        console.error('Channel ID attempted:', idclass.channelErrorLogs());
+        console.error('Channel ID attempted:', process.env.ERROR_LOG_CHANNEL_ID || '');
         console.error('Client ready state:', client?.isReady());
     }
 }

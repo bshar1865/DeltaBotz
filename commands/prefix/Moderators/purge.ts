@@ -1,8 +1,9 @@
-import { Message, GuildMember, TextChannel, ChannelType, PermissionFlagsBits } from 'discord.js';
-import configManager from '../../utils/ConfigManager';
-import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
-import { hasModAccess } from '../../utils/permissions';
-import { MESSAGES } from '../../utils/messages';
+import { Message, GuildMember, TextChannel, ChannelType, PermissionFlagsBits, GuildTextBasedChannel } from 'discord.js';
+import configManager from '../../../utils/ConfigManager';
+import { getCooldownRemaining, setCooldown } from '../../../utils/cooldown';
+import { hasModAccess } from '../../../utils/permissions';
+import { MESSAGES } from '../../../utils/messages';
+import { purgeRecentMessages } from '../../../utils/messageDeletion';
 
 export default {
   name: 'purge',
@@ -58,9 +59,9 @@ export default {
 
     try {
       if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement) {
-        const deleted = await channel.bulkDelete(amount, true);
+        const deleted = await purgeRecentMessages(channel as GuildTextBasedChannel, amount);
         await channel.send({
-          content: MESSAGES.purge.deleted(deleted.size),
+          content: MESSAGES.purge.deleted(deleted),
           allowedMentions: { parse: [] }
         }).catch(() => {});
       }

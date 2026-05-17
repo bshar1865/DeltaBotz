@@ -6,9 +6,9 @@ import {
   GuildMember,
   PermissionFlagsBits
 } from 'discord.js';
-import configManager from '../utils/ConfigManager';
-import { hasModAccess } from '../utils/permissions';
-import { MESSAGES } from '../utils/messages';
+import configManager from '../../utils/ConfigManager';
+import { hasModAccess } from '../../utils/permissions';
+import { MESSAGES } from '../../utils/messages';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));

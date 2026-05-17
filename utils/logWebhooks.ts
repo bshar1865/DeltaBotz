@@ -11,6 +11,7 @@ import type { ServerConfig } from "../types/config";
 import { logError } from "./errorLogger";
 
 export type LogSection = "moderation" | "members" | "messages";
+export type MessageEventType = "messageDelete" | "messageEdit" | "reactionRemove";
 
 type WebhookRef = {
   channelId?: string;
@@ -170,6 +171,28 @@ function isUnknownWebhook(err: any): boolean {
   return code === 10015 || /Unknown Webhook/i.test(String(err?.message || err));
 }
 
+async function sendLogEmbedToChannel(
+  guild: Guild,
+  config: ServerConfig,
+  section: LogSection,
+  embed: APIEmbed
+): Promise<boolean> {
+  const channelId = getChannelId(config, section);
+  if (!channelId) return false;
+
+  const channel = await guild.channels.fetch(channelId).catch(() => null);
+  if (!channel?.isTextBased() || channel.isThread()) return false;
+
+  const me = guild.members.me ?? (await guild.members.fetchMe().catch(() => null));
+  const perms = me ? channel.permissionsFor(me) : null;
+  if (!perms?.has(PermissionFlagsBits.SendMessages) || !perms.has(PermissionFlagsBits.EmbedLinks)) {
+    return false;
+  }
+
+  await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
+  return true;
+}
+
 export async function sendLogEmbed(
   guild: Guild,
   config: ServerConfig,
@@ -178,16 +201,11 @@ export async function sendLogEmbed(
 ): Promise<void> {
   if (!config.logging?.enabled) return;
 
-  const sectionEvents = config.logging.events || ({} as any);
-  if (section === "messages" && !(sectionEvents.messageDelete || sectionEvents.messageEdit || sectionEvents.reactionRemove)) {
-    return;
-  }
-  if (section === "members" && !(sectionEvents.memberJoin || sectionEvents.memberLeave)) {
-    return;
-  }
-
   const ref = await ensureLogWebhook(guild, config, section);
-  if (!ref?.id || !ref.token) return;
+  if (!ref?.id || !ref.token) {
+    await sendLogEmbedToChannel(guild, config, section, embed).catch(() => {});
+    return;
+  }
 
   const key = cacheKey(ref.id, ref.token);
   const client = getClient(ref.id, ref.token);
@@ -205,18 +223,39 @@ export async function sendLogEmbed(
       });
     } catch (error) {
       if (isUnknownWebhook(error)) {
+        const sectionRef = getRef(config, section);
+        sectionRef.id = undefined;
+        sectionRef.token = undefined;
         const refreshed = await ensureLogWebhook(guild, config, section);
-        if (!refreshed?.id || !refreshed.token) return;
-        const nextClient = getClient(refreshed.id, refreshed.token);
-        await nextClient.send({
-          username,
-          avatarURL,
-          embeds: [embed],
-          allowedMentions: { parse: [] },
-        }).catch(() => {});
+        if (refreshed?.id && refreshed.token) {
+          const nextClient = getClient(refreshed.id, refreshed.token);
+          await nextClient.send({
+            username,
+            avatarURL,
+            embeds: [embed],
+            allowedMentions: { parse: [] },
+          }).catch(() => {});
+          return;
+        }
+        await sendLogEmbedToChannel(guild, config, section, embed).catch(() => {});
         return;
       }
-      try { await logError(error instanceof Error ? error : String(error), "sendLogEmbed", { guildId: guild.id, section }, guild.client, guild); } catch {}
+      const sent = await sendLogEmbedToChannel(guild, config, section, embed).catch(() => false);
+      if (!sent) {
+        try { await logError(error instanceof Error ? error : String(error), "sendLogEmbed", { guildId: guild.id, section }, guild.client, guild); } catch {}
+      }
     }
   });
+}
+
+export async function sendMessageLogEmbed(
+  guild: Guild,
+  config: ServerConfig,
+  eventType: MessageEventType,
+  embed: APIEmbed
+): Promise<void> {
+  if (!config.logging?.enabled) return;
+  const sectionEvents = config.logging.events || ({} as any);
+  if (!sectionEvents[eventType]) return;
+  await sendLogEmbed(guild, config, "messages", embed);
 }

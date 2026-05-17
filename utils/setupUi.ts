@@ -9,7 +9,7 @@ import type { ServerConfig } from "../types/config";
 export function buildSetupMenuRow(): ActionRowBuilder<StringSelectMenuBuilder> {
   const menu = new StringSelectMenuBuilder()
     .setCustomId("setup_menu")
-    .setPlaceholder("Select a section to view")
+    .setPlaceholder("Pick a setup section")
     .addOptions(
       new StringSelectMenuOptionBuilder().setLabel("Prefix").setValue("prefix").setDescription("Set custom bot prefix"),
       new StringSelectMenuOptionBuilder().setLabel("Mod roles").setValue("roles").setDescription("View moderator roles"),
@@ -39,13 +39,31 @@ export function buildSetupHomeEmbed(config: ServerConfig): EmbedBuilder {
     ? config.permissions.moderatorRoles.map((r: string) => `<@&${r}>`).join(", ")
     : "None";
 
+  const loggingStatus = config.logging?.logChannelId || config.logging?.moderationLogChannelId
+    ? "Configured"
+    : "Not set";
+
+  const activeFeatures = [
+    config.features?.autoEmbed?.enabled ? "Auto Embed" : null,
+    config.features?.inviteBlock?.enabled ? "Invite Block" : null,
+    config.features?.honeypot?.enabled ? "Honeypot" : null,
+    config.features?.welcome?.enabled ? "Welcome" : null,
+    config.features?.goodbye?.enabled ? "Goodbye" : null,
+    config.features?.roleRestore?.enabled ? "Role Restore" : null,
+  ]
+    .filter(Boolean)
+    .join(" • ") || "None";
+
   return buildBaseSetupEmbed(
     "Setup",
-    "Use the menu below to configure the bot. Changes save instantly when you select.\n\n" +
-      "Note: in Mod Role sections, Re-select roles (including previously selected) to ensure they are included"
-  ).addFields(
-    { name: "Prefix", value: `\`${config.prefix || "."}\``, inline: true },
-    { name: "Who can use Mod Commands?", value: modRolesDisplay, inline: false },
-  );
+    "Choose a section below to update your server settings. Most changes save instantly."
+  )
+    .addFields(
+      { name: "Prefix", value: `\`${config.prefix || "."}\``, inline: true },
+      { name: "Who can use Mod Commands?", value: modRolesDisplay, inline: false },
+      { name: "Logging", value: loggingStatus, inline: true },
+      { name: "Active features", value: activeFeatures, inline: false },
+    )
+    .setFooter({ text: "Pick a setup section from the menu below." });
 }
 

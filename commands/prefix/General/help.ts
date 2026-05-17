@@ -1,7 +1,7 @@
 import { EmbedBuilder, Message, PermissionResolvable } from "discord.js";
-import configManager from "../../utils/ConfigManager";
-import { ExtendedClient } from "../../client";
-import { hasAnyPermission, hasModAccess, isAdmin } from "../../utils/permissions";
+import configManager from "../../../utils/ConfigManager";
+import { ExtendedClient } from "../../../client";
+import { hasAnyPermission, hasModAccess, isAdmin } from "../../../utils/permissions";
 
 type PrefixCommand = {
   name: string;

@@ -2,6 +2,7 @@ import { Events, Interaction, ActionRowBuilder, ButtonBuilder, ButtonStyle, Butt
 import { logError } from "../utils/errorLogger";
 import { ExtendedClient } from "../client";
 import { getAutoEmbedSwitchState, setAutoEmbedSwitchState } from "../utils/autoEmbedSwitchState";
+import { safeReply } from "../utils/interactionHelpers";
 import { handleSetupButton, handleSetupChannelSelect, handleSetupModalSubmit, handleSetupRoleSelect, handleSetupStringSelect } from "../setup/handlers";
 
 export default {
@@ -20,10 +21,7 @@ export default {
           try { await logError(err instanceof Error ? err : String(err), `slash:${interaction.commandName}`, undefined, client as any, (interaction as any).guild); } catch {}
 
           if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-            await interaction.reply({
-              content: "Something went wrong while executing this command.",
-              flags: MessageFlags.Ephemeral,
-            }).catch(() => {});
+            await safeReply(interaction, "Something went wrong while executing this command.");
           }
         }
       } else if (interaction.isStringSelectMenu()) {
@@ -52,19 +50,19 @@ export default {
 async function handleAutoEmbedSwitch(interaction: ButtonInteraction) {
   const state = getAutoEmbedSwitchState(interaction.message.id);
   if (!state) {
-    await interaction.reply({ content: 'This embed switch expired. Please run it again.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, 'This embed switch expired. Please run it again.');
     return;
   }
 
   if (interaction.user.id !== state.authorId) {
-    await interaction.reply({ content: 'Only the original sender can switch this embed.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, 'Only the original sender can switch this embed.');
     return;
   }
 
   const rawIndex = interaction.customId.split(':')[1];
   const index = Number(rawIndex);
   if (!Number.isFinite(index) || index < 0 || index >= state.candidates.length) {
-    await interaction.reply({ content: 'Invalid selection.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, 'Invalid selection.');
     return;
   }
 
@@ -88,7 +86,7 @@ async function handleAutoEmbedSwitch(interaction: ButtonInteraction) {
     content,
     components: [row],
   }).catch(async () => {
-    await interaction.reply({ content: 'Failed to update embed message.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, 'Failed to update embed message.');
   });
 }
 

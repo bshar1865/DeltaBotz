@@ -1,8 +1,8 @@
 import { Message, MessageCollector, TextChannel, DMChannel, NewsChannel, PermissionFlagsBits } from 'discord.js';
-import configManager from '../../utils/ConfigManager';
-import { getGuildDB } from '../../utils/db';
-import { ExtendedClient } from '../../client';
-import { hasModAccess } from '../../utils/permissions';
+import configManager from '../../../utils/ConfigManager';
+import { getGuildDB } from '../../../utils/db';
+import { ExtendedClient } from '../../../client';
+import { hasModAccess } from '../../../utils/permissions';
 
 interface TempCommand {
   name: string;

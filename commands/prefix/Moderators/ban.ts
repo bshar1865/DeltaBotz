@@ -1,9 +1,9 @@
 import { Message, Client, TextChannel, PermissionFlagsBits } from 'discord.js';
-import configManager from '../../utils/ConfigManager';
-import { getCooldownRemaining, setCooldown } from '../../utils/cooldown';
-import { hasModAccess } from '../../utils/permissions';
-import { canModerateTarget } from '../../utils/canModerateTarget';
-import { MESSAGES } from '../../utils/messages';
+import configManager from '../../../utils/ConfigManager';
+import { getCooldownRemaining, setCooldown } from '../../../utils/cooldown';
+import { hasModAccess } from '../../../utils/permissions';
+import { canModerateTarget } from '../../../utils/canModerateTarget';
+import { MESSAGES } from '../../../utils/messages';
 
 function parsePipeList(input: string | undefined): string[] {
   if (!input) return [];

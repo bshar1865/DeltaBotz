@@ -14,16 +14,19 @@ const event: Event = {
     // Restore roles if enabled
     let restoredRoleIds: string[] = [];
     let failedRoleIds: string[] = [];
-    if (config.features.roleRestore.enabled) {
+    const roleRestoreEnabled = config.features.roleRestore.enabled;
+
+    if (roleRestoreEnabled) {
       const gdb = getGuildDB(member.guild.id);
       const roleIds: string[] | null = await gdb.get(`roles_${member.id}_${member.guild.id}`);
+      const me =
+        member.guild.members.me ??
+        (await member.guild.members.fetchMe().catch(() => null));
 
-      if (!member.guild.members.me) return;
-
-      if (roleIds && roleIds.length > 0) {
+      if (roleIds && roleIds.length > 0 && me) {
         for (const roleId of roleIds) {
           const role = member.guild.roles.cache.get(roleId);
-          if (role && member.guild.members.me?.roles.highest.position > role.position) {
+          if (role && me.roles.highest.position > role.position) {
             try {
               await member.roles.add(roleId);
               restoredRoleIds.push(roleId);
@@ -37,17 +40,20 @@ const event: Event = {
         }
         await gdb.delete(`roles_${member.id}_${member.guild.id}`);
       }
+    }
 
-      if (config.features.autoRole.enabled) {
-        for (const roleId of config.features.autoRole.roleIds) {
-          try {
-            const role = member.guild.roles.cache.get(roleId);
-            if (role && member.guild.members.me?.roles.highest.position > role.position) {
-              await member.roles.add(roleId);
-            }
-          } catch (err) {
-            console.warn(`Could not add auto role ${roleId}:`, err);
+    if (config.features.autoRole.enabled) {
+      const me =
+        member.guild.members.me ??
+        (await member.guild.members.fetchMe().catch(() => null));
+      for (const roleId of config.features.autoRole.roleIds) {
+        try {
+          const role = member.guild.roles.cache.get(roleId);
+          if (role && me && me.roles.highest.position > role.position) {
+            await member.roles.add(roleId);
           }
+        } catch (err) {
+          console.warn(`Could not add auto role ${roleId}:`, err);
         }
       }
     }
@@ -65,22 +71,26 @@ const event: Event = {
 
     // Webhook member join logs (separate from public welcome message)
     if (config.logging?.enabled && config.logging.events?.memberJoin) {
-      const restoredShown = restoredRoleIds.slice(0, 50).map(r => `<@&${r}>`).join(', ');
-      const failedShown = failedRoleIds.slice(0, 50).map(r => `<@&${r}>`).join(', ');
+      const fields: { name: string; value: string; inline?: boolean }[] = [
+        { name: 'User', value: `${member.user ? `<@${member.user.id}>` : member.id} (${member.id})`, inline: false },
+        { name: 'Account', value: member.user ? `${member.user.tag}` : 'Unknown', inline: true },
+      ];
 
-      const restoredText = restoredShown.length ? restoredShown : 'None';
-      const failedText = failedShown.length ? failedShown : 'None';
+      if (roleRestoreEnabled) {
+        const restoredShown = restoredRoleIds.slice(0, 50).map(r => `<@&${r}>`).join(', ');
+        const failedShown = failedRoleIds.slice(0, 50).map(r => `<@&${r}>`).join(', ');
+        const restoredText = restoredShown.length ? restoredShown : 'None';
+        const failedText = failedShown.length ? failedShown : 'None';
+        fields.push(
+          { name: 'Restored Roles', value: restoredText.length > 1024 ? `${restoredText.slice(0, 1021)}...` : restoredText, inline: false },
+          { name: 'Failed/Skipped Roles', value: failedText.length > 1024 ? `${failedText.slice(0, 1021)}...` : failedText, inline: false },
+        );
+      }
 
       await sendLogEmbed(member.guild, config, 'members', {
         title: 'Member Joined',
         color: 0x57f287,
-        fields: [
-          { name: 'User', value: `${member.user ? `<@${member.user.id}>` : member.id} (${member.id})`, inline: false },
-          { name: 'Account', value: member.user ? `${member.user.tag}` : 'Unknown', inline: true },
-          { name: 'Role Restore', value: config.features.roleRestore.enabled ? 'Enabled' : 'Disabled', inline: true },
-          { name: 'Restored Roles', value: restoredText.length > 1024 ? `${restoredText.slice(0, 1021)}...` : restoredText, inline: false },
-          { name: 'Failed/Skipped Roles', value: failedText.length > 1024 ? `${failedText.slice(0, 1021)}...` : failedText, inline: false },
-        ],
+        fields,
         timestamp: new Date().toISOString(),
       }).catch(() => {});
     }

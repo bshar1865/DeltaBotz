@@ -12,10 +12,12 @@ import {
   TextInputStyle,
   type ChannelSelectMenuInteraction,
   type ModalSubmitInteraction,
+  type Interaction,
 } from "discord.js";
 import configManager from "../utils/ConfigManager";
-import idclass from "../utils/idclass";
+import type { ServerConfig } from "../types/config";
 import { setLogSectionChannel } from "../utils/logWebhooks";
+import { safeReply, safeReplyOrFollowUp, safeUpdate } from "../utils/interactionHelpers";
 import {
   buildAutoModerationEmbed,
   buildGoodbyeEmbed,
@@ -42,16 +44,32 @@ import {
 } from "./rows";
 import { handleSetupMenu } from "./menu";
 
-function hasSetupAccess(interaction: { user?: any; memberPermissions?: any }): boolean {
-  const isOwner = (interaction as any).user?.id === idclass.ownershipID();
+const SETUP_DENIED_MESSAGE = "You need administrator or server owner to use setup.";
+const REFRESH_FAILURE_MESSAGE = "Saved, but I couldn't refresh the view. Reopen /setup if needed.";
+
+async function saveConfigAndRefresh(
+  interaction: Interaction,
+  config: ServerConfig,
+  embed: any,
+  rows: any[],
+  failureMessage = REFRESH_FAILURE_MESSAGE
+): Promise<void> {
+  await configManager.saveServerConfig(config);
+  await safeUpdate(interaction, { embeds: [embed], components: rows }, failureMessage);
+}
+
+function hasSetupAccess(interaction: Interaction & { memberPermissions?: any; guild?: any }): boolean {
+  const botOwnerId = process.env.BOT_OWNER_ID || process.env.OWNER_ID || "";
+  const isOwner = (interaction as any).user?.id === botOwnerId;
+  const isGuildOwner = interaction.guild?.ownerId === (interaction as any).user?.id;
   const isAdmin = (interaction as any).memberPermissions?.has?.(PermissionFlagsBits.Administrator);
-  return Boolean(isOwner || isAdmin);
+  return Boolean(isOwner || isGuildOwner || isAdmin);
 }
 
 export async function handleSetupStringSelect(interaction: StringSelectMenuInteraction): Promise<boolean> {
   if (interaction.customId !== "setup_menu") return false;
   if (!hasSetupAccess(interaction)) {
-    await interaction.reply({ content: "You need Administrator to use setup.", flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, SETUP_DENIED_MESSAGE);
     return true;
   }
   await handleSetupMenu(interaction);
@@ -61,18 +79,13 @@ export async function handleSetupStringSelect(interaction: StringSelectMenuInter
 export async function handleSetupRoleSelect(interaction: RoleSelectMenuInteraction): Promise<boolean> {
   if (interaction.customId !== "setup_role_mods") return false;
   if (!hasSetupAccess(interaction)) {
-    await interaction.reply({ content: "You need Administrator to use setup.", flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, SETUP_DENIED_MESSAGE);
     return true;
   }
   const guild = interaction.guild!;
   const config = await configManager.getOrCreateConfig(guild);
   config.permissions.moderatorRoles = interaction.values as string[];
-  await configManager.saveServerConfig(config);
-  const embed = buildRoleEmbed(config);
-  await interaction.update({ embeds: [embed], components: buildRoleRows(true) }).catch(async (error: any) => {
-    if (error?.code === 10062) return;
-    await interaction.followUp({ content: "Roles updated but failed to refresh display.", flags: MessageFlags.Ephemeral }).catch(() => {});
-  });
+  await saveConfigAndRefresh(interaction, config, buildRoleEmbed(config), buildRoleRows(true));
   return true;
 }
 
@@ -87,7 +100,7 @@ export async function handleSetupChannelSelect(interaction: ChannelSelectMenuInt
   ]);
   if (!known.has(interaction.customId)) return false;
   if (!hasSetupAccess(interaction)) {
-    await interaction.reply({ content: "You need Administrator to use setup.", flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, SETUP_DENIED_MESSAGE);
     return true;
   }
 
@@ -95,22 +108,17 @@ export async function handleSetupChannelSelect(interaction: ChannelSelectMenuInt
   const config = await configManager.getOrCreateConfig(guild);
   const channelId = interaction.values?.[0] || undefined;
 
-  if (interaction.customId === "setup_log_channel") {
-    const res = await setLogSectionChannel(guild, config, "moderation", channelId);
-    await interaction.update({ embeds: [buildLoggingEmbed(config)], components: buildLoggingRows(true) }).catch(() => {});
-    if (res.message) await interaction.followUp({ content: res.message, flags: MessageFlags.Ephemeral }).catch(() => {});
-    return true;
-  }
-  if (interaction.customId === "setup_message_log_channel") {
-    const res = await setLogSectionChannel(guild, config, "messages", channelId);
-    await interaction.update({ embeds: [buildLoggingEmbed(config)], components: buildLoggingRows(true) }).catch(() => {});
-    if (res.message) await interaction.followUp({ content: res.message, flags: MessageFlags.Ephemeral }).catch(() => {});
-    return true;
-  }
-  if (interaction.customId === "setup_member_log_channel") {
-    const res = await setLogSectionChannel(guild, config, "members", channelId);
-    await interaction.update({ embeds: [buildLoggingEmbed(config)], components: buildLoggingRows(true) }).catch(() => {});
-    if (res.message) await interaction.followUp({ content: res.message, flags: MessageFlags.Ephemeral }).catch(() => {});
+  const loggingSectionMap = {
+    setup_log_channel: "moderation",
+    setup_message_log_channel: "messages",
+    setup_member_log_channel: "members",
+  } as const;
+
+  if (loggingSectionMap[interaction.customId as keyof typeof loggingSectionMap]) {
+    const section = loggingSectionMap[interaction.customId as keyof typeof loggingSectionMap];
+    const res = await setLogSectionChannel(guild, config, section, channelId);
+    await saveConfigAndRefresh(interaction, config, buildLoggingEmbed(config), buildLoggingRows(true));
+    if (res.message) await safeReplyOrFollowUp(interaction, res.message);
     return true;
   }
   if (interaction.customId === "setup_honeypot_channel") {
@@ -123,20 +131,17 @@ export async function handleSetupChannelSelect(interaction: ChannelSelectMenuInt
         autoBan: Boolean(channelId),
       },
     };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildHoneypotEmbed(config)], components: buildHoneypotRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildHoneypotEmbed(config), buildHoneypotRows(true));
     return true;
   }
   if (interaction.customId === "setup_welcome_channel") {
     config.features.welcome = { ...(config.features.welcome || {}), channelId };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildWelcomeEmbed(config)], components: buildWelcomeRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildWelcomeEmbed(config), buildWelcomeRows(true));
     return true;
   }
   if (interaction.customId === "setup_goodbye_channel") {
     config.features.goodbye = { ...(config.features.goodbye || {}), channelId };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildGoodbyeEmbed(config)], components: buildGoodbyeRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildGoodbyeEmbed(config), buildGoodbyeRows(true));
     return true;
   }
   return false;
@@ -147,7 +152,7 @@ export async function handleSetupButton(interaction: ButtonInteraction): Promise
   const knownPrefixes = ["toggle_", "change_prefix", "reset_prefix", "reset_welcome_embed", "reset_goodbye_embed", "edit_welcome_embed", "edit_goodbye_embed", "setup_back"];
   if (!knownPrefixes.some((p) => customId.startsWith(p))) return false;
   if (!hasSetupAccess(interaction)) {
-    await interaction.reply({ content: "You need Administrator to use setup.", flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, SETUP_DENIED_MESSAGE);
     return true;
   }
 
@@ -155,50 +160,51 @@ export async function handleSetupButton(interaction: ButtonInteraction): Promise
   const config = await configManager.getOrCreateConfig(guild);
 
   if (customId === "setup_back") {
-    await interaction.update({ embeds: [buildMainEmbed(config)], components: buildMainRows() }).catch(() => {});
+    await safeUpdate(interaction, { embeds: [buildMainEmbed(config)], components: buildMainRows() }, REFRESH_FAILURE_MESSAGE);
     return true;
   }
 
   if (customId === "toggle_welcome") {
     config.features.welcome = { ...(config.features.welcome || {}), enabled: !config.features?.welcome?.enabled };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildWelcomeEmbed(config)], components: buildWelcomeRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildWelcomeEmbed(config), buildWelcomeRows(true));
     return true;
   }
   if (customId === "toggle_goodbye") {
     config.features.goodbye = { ...(config.features.goodbye || {}), enabled: !config.features?.goodbye?.enabled };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildGoodbyeEmbed(config)], components: buildGoodbyeRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildGoodbyeEmbed(config), buildGoodbyeRows(true));
     return true;
   }
   if (customId === "toggle_restore") {
     config.features.roleRestore = { ...(config.features.roleRestore || {}), enabled: !config.features?.roleRestore?.enabled };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildRoleRestoreEmbed(config)], components: buildRoleRestoreRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildRoleRestoreEmbed(config), buildRoleRestoreRows(true));
     return true;
   }
   if (customId === "toggle_auto_embed") {
     config.features.autoEmbed = { ...(config.features.autoEmbed || {}), enabled: !config.features?.autoEmbed?.enabled };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildAutoModerationEmbed(config)], components: buildAutoModerationRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildAutoModerationEmbed(config), buildAutoModerationRows(true));
     return true;
   }
   if (customId === "toggle_invite_block") {
     config.features.inviteBlock = { ...(config.features.inviteBlock || {}), enabled: !config.features?.inviteBlock?.enabled };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildAutoModerationEmbed(config)], components: buildAutoModerationRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildAutoModerationEmbed(config), buildAutoModerationRows(true));
     return true;
   }
   if (customId === "toggle_moderator_commands") {
     config.permissions.moderatorCommandsEnabled = !(config.permissions.moderatorCommandsEnabled ?? true);
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildPermissionsEmbed(config)], components: buildPermissionsRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildPermissionsEmbed(config), buildPermissionsRows(true));
+    return true;
+  }
+  if (customId === "toggle_honeypot") {
+    config.features.honeypot = {
+      ...(config.features.honeypot || { deleteMessage: true, autoBan: true, autoUnban: false }),
+      enabled: !config.features?.honeypot?.enabled,
+    };
+    await saveConfigAndRefresh(interaction, config, buildHoneypotEmbed(config), buildHoneypotRows(true));
     return true;
   }
   if (customId === "toggle_honeypot_autounban") {
     config.features.honeypot = { ...(config.features.honeypot || {}), autoUnban: !config.features?.honeypot?.autoUnban };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildHoneypotEmbed(config)], components: buildHoneypotRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildHoneypotEmbed(config), buildHoneypotRows(true));
     return true;
   }
 
@@ -216,35 +222,26 @@ export async function handleSetupButton(interaction: ButtonInteraction): Promise
     modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(prefixInput));
 
     await interaction.showModal(modal).catch(async () => {
-      await interaction.followUp({
-        content: "I couldn't open the prefix modal. Please try again (Discord client issue).",
-        flags: MessageFlags.Ephemeral,
-      }).catch(() => {});
+      await safeReplyOrFollowUp(interaction, { content: "I couldn't open the prefix modal. Please try again." });
     });
     return true;
   }
 
   if (customId === "reset_prefix") {
     config.prefix = ".";
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildPrefixEmbed(config)], components: buildPrefixRows(true) }).catch(async (error: any) => {
-      if (error?.code === 10062) return;
-      await interaction.followUp({ content: "Prefix reset but failed to update display. Please refresh.", flags: MessageFlags.Ephemeral }).catch(() => {});
-    });
+    await saveConfigAndRefresh(interaction, config, buildPrefixEmbed(config), buildPrefixRows(true));
     return true;
   }
 
   if (customId === "reset_welcome_embed") {
     config.features.welcome = { ...(config.features.welcome || {}), embed: undefined };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildWelcomeEmbed(config)], components: buildWelcomeRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildWelcomeEmbed(config), buildWelcomeRows(true));
     return true;
   }
 
   if (customId === "reset_goodbye_embed") {
     config.features.goodbye = { ...(config.features.goodbye || {}), embed: undefined };
-    await configManager.saveServerConfig(config);
-    await interaction.update({ embeds: [buildGoodbyeEmbed(config)], components: buildGoodbyeRows(true) }).catch(() => {});
+    await saveConfigAndRefresh(interaction, config, buildGoodbyeEmbed(config), buildGoodbyeRows(true));
     return true;
   }
 
@@ -258,7 +255,9 @@ export async function handleSetupButton(interaction: ButtonInteraction): Promise
       new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("footer").setLabel("Footer (optional)").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(2048).setValue(current.footer ?? "")),
       new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("imageUrl").setLabel("Image URL (optional)").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(4000).setValue(current.imageUrl ?? "")),
     );
-    await interaction.showModal(modal).catch(() => {});
+    await interaction.showModal(modal).catch(async () => {
+      await safeReply(interaction, "Unable to open the welcome embed modal. Try again.");
+    });
     return true;
   }
 
@@ -272,7 +271,9 @@ export async function handleSetupButton(interaction: ButtonInteraction): Promise
       new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("footer").setLabel("Footer (optional)").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(2048).setValue(current.footer ?? "")),
       new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("imageUrl").setLabel("Image URL (optional)").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(4000).setValue(current.imageUrl ?? "")),
     );
-    await interaction.showModal(modal).catch(() => {});
+    await interaction.showModal(modal).catch(async () => {
+      await safeReply(interaction, "Unable to open the goodbye embed modal. Try again.");
+    });
     return true;
   }
 
@@ -283,7 +284,7 @@ export async function handleSetupModalSubmit(interaction: ModalSubmitInteraction
   const known = new Set(["prefix_modal", "welcome_embed_modal", "goodbye_embed_modal"]);
   if (!known.has(interaction.customId)) return false;
   if (!hasSetupAccess(interaction)) {
-    await interaction.reply({ content: "You need Administrator to use setup.", flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReply(interaction, SETUP_DENIED_MESSAGE);
     return true;
   }
 
@@ -295,16 +296,13 @@ export async function handleSetupModalSubmit(interaction: ModalSubmitInteraction
     if (newPrefix && newPrefix.length >= 1 && newPrefix.length <= 5) {
       config.prefix = newPrefix;
       await configManager.saveServerConfig(config);
-      await interaction.reply({
+      await safeReplyOrFollowUp(interaction, {
         content: `Prefix changed to \`${newPrefix}\``,
         embeds: [buildPrefixEmbed(config)],
         components: buildPrefixRows(true),
-        flags: MessageFlags.Ephemeral,
-      }).catch(async () => {
-        await interaction.followUp({ content: `Prefix changed to \`${newPrefix}\``, flags: MessageFlags.Ephemeral }).catch(() => {});
       });
     } else {
-      await interaction.reply({ content: "Invalid prefix. Please use 1-5 characters.", flags: MessageFlags.Ephemeral }).catch(() => {});
+      await safeReplyOrFollowUp(interaction, { content: "Invalid prefix. Please use 1-5 characters." });
     }
     return true;
   }
@@ -327,7 +325,7 @@ export async function handleSetupModalSubmit(interaction: ModalSubmitInteraction
     };
     config.features.welcome = { ...(config.features.welcome || {}), embed };
     await configManager.saveServerConfig(config);
-    await interaction.reply({ content: "Welcome embed updated.", embeds: [buildWelcomeEmbed(config)], components: buildWelcomeRows(true), flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReplyOrFollowUp(interaction, "Welcome embed updated.");
     return true;
   }
 
@@ -349,7 +347,7 @@ export async function handleSetupModalSubmit(interaction: ModalSubmitInteraction
     };
     config.features.goodbye = { ...(config.features.goodbye || {}), embed };
     await configManager.saveServerConfig(config);
-    await interaction.reply({ content: "Goodbye embed updated.", embeds: [buildGoodbyeEmbed(config)], components: buildGoodbyeRows(true), flags: MessageFlags.Ephemeral }).catch(() => {});
+    await safeReplyOrFollowUp(interaction, "Goodbye embed updated.");
     return true;
   }
 

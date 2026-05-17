@@ -101,7 +101,10 @@ export const MESSAGES = {
 
   purge: {
     invalidAmount: "Please provide a number between 1 and 100 for the amount of messages to delete.",
-    deleted: (count: number) => `Deleted ${count} messages.`,
+    deleted: (count: number) =>
+      count > 0
+        ? `Deleted ${count} message${count === 1 ? '' : 's'}.`
+        : 'No messages could be deleted (they may be pinned, older than 14 days, or missing permissions).',
     failed: "I was unable to delete messages. Make sure I have the right permissions.",
     log: (actorId: Id, amount: number, channelId: Id) =>
       `<@${actorId}> has __**PURGED**__ ** ${amount}** messages in <#${channelId}>`,

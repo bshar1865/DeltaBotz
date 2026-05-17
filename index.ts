@@ -3,7 +3,7 @@ import { client } from './client';
 import { loadPrefixCommands } from './loaders/loadPrefixCommands';
 import { loadEvents } from './loaders/loadEvents';
 import { loadSlashCommands } from './loaders/loadSlashCommands';
-import { registerSlashCommands } from './registerSlashCommands';
+import { registerSlashCommands } from './utils/registerSlashCommands';
 import { logError } from './utils/errorLogger';
 
 // Load `.env` first, then `assets.env` (non-overriding) for extra values.

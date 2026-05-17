@@ -1,6 +1,6 @@
 import { Message, Client, User, PermissionFlagsBits } from 'discord.js';
-import configManager from '../../utils/ConfigManager';
-import { hasModAccess } from '../../utils/permissions';
+import configManager from '../../../utils/ConfigManager';
+import { hasModAccess } from '../../../utils/permissions';
 
 export default {
   name: 'botdm',

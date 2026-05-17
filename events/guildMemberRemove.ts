@@ -34,17 +34,26 @@ const event: Event = {
 
     // Webhook member leave logs (separate from public goodbye message)
     if (config.logging?.enabled && config.logging.events?.memberLeave) {
-      const rolesShown = leftRoles.slice(0, 50).map(r => `<@&${r}>`).join(', ');
-      const rolesText = rolesShown.length ? rolesShown : 'None';
+      const roleRestoreEnabled = config.features.roleRestore.enabled;
+      const fields: { name: string; value: string; inline?: boolean }[] = [
+        { name: 'User', value: `${member.user ? `<@${member.user.id}>` : member.id} (${member.id})`, inline: false },
+        { name: 'Account', value: member.user ? `${member.user.tag}` : 'Unknown', inline: true },
+      ];
+
+      if (roleRestoreEnabled) {
+        const rolesShown = leftRoles.slice(0, 50).map(r => `<@&${r}>`).join(', ');
+        const rolesText = rolesShown.length ? rolesShown : 'None';
+        fields.push({
+          name: 'Roles (saved for restore)',
+          value: rolesText.length > 1024 ? `${rolesText.slice(0, 1021)}...` : rolesText,
+          inline: false,
+        });
+      }
+
       await sendLogEmbed(member.guild, config, 'members', {
         title: 'Member Left',
         color: 0xed4245,
-        fields: [
-          { name: 'User', value: `${member.user ? `<@${member.user.id}>` : member.id} (${member.id})`, inline: false },
-          { name: 'Account', value: member.user ? `${member.user.tag}` : 'Unknown', inline: true },
-          { name: 'Stored for Restore', value: config.features.roleRestore.enabled ? 'Yes' : 'No', inline: true },
-          { name: 'Roles (snapshot)', value: rolesText.length > 1024 ? `${rolesText.slice(0, 1021)}...` : rolesText, inline: false },
-        ],
+        fields,
         timestamp: new Date().toISOString(),
       }).catch(() => {});
     }

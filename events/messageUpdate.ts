@@ -1,7 +1,8 @@
 import { Events, Message, PartialMessage, type APIEmbed } from "discord.js";
 import type { Event } from "../types";
 import configManager from "../utils/ConfigManager";
-import { sendLogEmbed } from "../utils/logWebhooks";
+import { sendMessageLogEmbed } from "../utils/logWebhooks";
+import { getMessageHistory, saveMessageHistory } from "../utils/messageHistory";
 
 function clip(input: string, max = 1000): string {
   const text = String(input ?? "");
@@ -21,15 +22,16 @@ const event: Event = {
     if (!config.logging?.enabled) return;
     if (!config.logging.events?.messageEdit) return;
 
-    const before = (oldMessage as Message).content ?? "";
-    const after = (newMessage as Message).content ?? "";
+    const history = await getMessageHistory(guild.id, newMessage.id);
+    const before = (oldMessage as Message).content || history?.content || "";
+    const after = (newMessage as Message).content || "";
     if (before === after) return;
     if (!before && !after) return;
 
     const embed: APIEmbed = {
       title: "Message Edited",
       description: (newMessage as Message).url ? `Jump link: ${(newMessage as Message).url}` : undefined,
-      color: 0xff0000,
+      color: 0xffff00,
       fields: [
         {
           name: "Author",
@@ -45,9 +47,13 @@ const event: Event = {
     };
 
     try {
-      await sendLogEmbed(guild, config, "messages", embed);
+      await sendMessageLogEmbed(guild, config, "messageEdit", embed);
     } catch {
       // ignore
+    }
+
+    if (newMessage instanceof Message) {
+      await saveMessageHistory(newMessage);
     }
   },
 };

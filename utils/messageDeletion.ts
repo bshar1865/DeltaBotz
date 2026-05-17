@@ -1,124 +1,189 @@
-import { Guild, ChannelType, Collection, Message } from 'discord.js';
+import {
+  ChannelType,
+  Guild,
+  Message,
+  NewsChannel,
+  PermissionFlagsBits,
+  TextChannel,
+  type GuildTextBasedChannel,
+} from 'discord.js';
+
+const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const BULK_CHUNK = 100;
+const FETCH_PAUSE_MS = 350;
+const DELETE_PAUSE_MS = 400;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isBulkDeletable(msg: Message): boolean {
+  return !msg.pinned && Date.now() - msg.createdTimestamp < FOURTEEN_DAYS_MS;
+}
+
+async function deleteMessageBatch(
+  channel: GuildTextBasedChannel,
+  messages: Message[]
+): Promise<number> {
+  if (messages.length === 0) return 0;
+
+  const bulkable = messages.filter(isBulkDeletable);
+  let deleted = 0;
+
+  for (let i = 0; i < bulkable.length; i += BULK_CHUNK) {
+    const chunk = bulkable.slice(i, i + BULK_CHUNK);
+    try {
+      const result = await channel.bulkDelete(chunk, false);
+      deleted += result.size;
+    } catch {
+      for (const msg of chunk) {
+        try {
+          await msg.delete();
+          deleted++;
+          await sleep(75);
+        } catch {
+          // Already deleted, too old, or missing permissions
+        }
+      }
+    }
+    if (i + BULK_CHUNK < bulkable.length) await sleep(DELETE_PAUSE_MS);
+  }
+
+  const nonBulkable = messages.filter((m) => !isBulkDeletable(m) && !m.pinned);
+  for (const msg of nonBulkable) {
+    try {
+      await msg.delete();
+      deleted++;
+      await sleep(75);
+    } catch {
+      // Skip inaccessible messages
+    }
+  }
+
+  return deleted;
+}
+
+async function collectMessages(
+  channel: GuildTextBasedChannel,
+  options: {
+    maxMessages: number;
+    predicate: (msg: Message) => boolean;
+    maxAgeMs?: number;
+  }
+): Promise<Message[]> {
+  const matches: Message[] = [];
+  let before: string | undefined;
+  let pages = 0;
+  const maxPages = Math.ceil(options.maxMessages / 100) + 5;
+
+  while (matches.length < options.maxMessages && pages < maxPages) {
+    const batch = await channel.messages.fetch({ limit: 100, before }).catch(() => null);
+    if (!batch || batch.size === 0) break;
+
+    const messages = [...batch.values()];
+    pages++;
+
+    for (const msg of messages) {
+      if (options.maxAgeMs && Date.now() - msg.createdTimestamp > options.maxAgeMs) {
+        continue;
+      }
+      if (options.predicate(msg)) {
+        matches.push(msg);
+        if (matches.length >= options.maxMessages) return matches;
+      }
+    }
+
+    const oldest = messages[messages.length - 1];
+    if (!oldest || batch.size < 100) break;
+    if (options.maxAgeMs && Date.now() - oldest.createdTimestamp > options.maxAgeMs) break;
+
+    before = oldest.id;
+    await sleep(FETCH_PAUSE_MS);
+  }
+
+  return matches;
+}
+
+type ThreadParentChannel = TextChannel | NewsChannel;
+
+async function getTextChannels(guild: Guild): Promise<ThreadParentChannel[]> {
+  const channels: ThreadParentChannel[] = [];
+
+  const fetched = await guild.channels.fetch().catch(() => guild.channels.cache);
+  for (const channel of fetched.values()) {
+    if (channel?.type === ChannelType.GuildText || channel?.type === ChannelType.GuildAnnouncement) {
+      channels.push(channel as ThreadParentChannel);
+    }
+  }
+
+  return channels;
+}
+
+async function getThreadChannels(parent: ThreadParentChannel): Promise<GuildTextBasedChannel[]> {
+  const threads: GuildTextBasedChannel[] = [];
+  const active = await parent.threads.fetchActive().catch(() => null);
+  if (active) {
+    for (const thread of active.threads.values()) {
+      threads.push(thread);
+    }
+  }
+  const archived = await parent.threads.fetchArchived({ limit: 25 }).catch(() => null);
+  if (archived) {
+    for (const thread of archived.threads.values()) {
+      threads.push(thread);
+    }
+  }
+  return threads;
+}
 
 /**
- * Deletes all messages from a user in all channels within the last 1 day (24 hours)
- * @param guild - The Discord guild
- * @param userId - The user ID whose messages to delete
- * @returns Promise<number> - Number of messages deleted
+ * Purge up to `amount` recent messages in a channel (skips pinned; falls back to single deletes).
+ */
+export async function purgeRecentMessages(
+  channel: GuildTextBasedChannel,
+  amount: number
+): Promise<number> {
+  const extraBuffer = Math.min(50, amount);
+  const candidates = await collectMessages(channel, {
+    maxMessages: amount + extraBuffer,
+    predicate: () => true,
+  });
+
+  const targets = candidates.slice(0, amount);
+  return deleteMessageBatch(channel, targets);
+}
+
+/**
+ * Deletes messages from a user across the guild within the last 24 hours.
  */
 export async function deleteUserMessagesLastDay(guild: Guild, userId: string): Promise<number> {
   let totalDeleted = 0;
-  const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000); // 1 day in milliseconds
+  const me = guild.members.me ?? (await guild.members.fetchMe().catch(() => null));
+  if (!me) return 0;
 
-  try {
-    // Get all text-capable channels in the guild (including threads when cached)
-    const channels = guild.channels.cache.filter((channel: any) => {
-      // Forum channels themselves are not message containers; their threads are.
-      if (channel.type === ChannelType.GuildForum) return false;
-      return channel.isTextBased();
-    }) as unknown as Collection<string, any>;
+  const textChannels = await getTextChannels(guild);
 
-    // Process each channel
-    for (const [, channel] of channels) {
+  for (const channel of textChannels) {
+    if (!me.permissionsIn(channel).has(PermissionFlagsBits.ManageMessages)) continue;
+
+    const channelsToScan: GuildTextBasedChannel[] = [channel, ...(await getThreadChannels(channel))];
+
+    for (const targetChannel of channelsToScan) {
+      if (!me.permissionsIn(targetChannel).has(PermissionFlagsBits.ManageMessages)) continue;
+
       try {
-        // Check if bot has permission to manage messages in this channel
-        const me = guild.members.me;
-        if (!me || !me.permissionsIn(channel).has('ManageMessages')) {
-          continue; // Skip channels where bot doesn't have permission
-        }
+        const messages = await collectMessages(targetChannel, {
+          maxMessages: 2500,
+          maxAgeMs: ONE_DAY_MS,
+          predicate: (msg) => msg.author.id === userId,
+        });
 
-        // Fetch messages from the channel (up to 100 at a time)
-        let lastMessageId: string | undefined;
-        let hasMore = true;
-        const messagesToDelete: Message[] = [];
-
-        while (hasMore && messagesToDelete.length < 1000) { // Limit to prevent excessive API calls
-          const fetchOptions: any = { limit: 100 };
-          if (lastMessageId) {
-            fetchOptions.before = lastMessageId;
-          }
-
-          const messages = await channel.messages.fetch(fetchOptions);
-          
-          // Type assertion - messages.fetch() returns Collection<string, Message>
-          const messagesCollection = messages as unknown as Collection<string, Message>;
-          
-          // Convert to array for easier handling
-          const messagesArray = Array.from(messagesCollection.values());
-          
-          if (messagesArray.length === 0) {
-            hasMore = false;
-            break;
-          }
-
-          // Filter messages from the user within the last day
-          let oldestTimestamp = Date.now();
-          for (const msg of messagesArray) {
-            if (msg.author.id === userId && msg.createdTimestamp >= oneDayAgo) {
-              messagesToDelete.push(msg);
-            }
-            
-            // Track oldest message for pagination
-            if (msg.createdTimestamp < oldestTimestamp) {
-              oldestTimestamp = msg.createdTimestamp;
-              lastMessageId = msg.id;
-            }
-          }
-
-          // If the oldest message is older than 1 day, stop fetching
-          if (oldestTimestamp < oneDayAgo) {
-            hasMore = false;
-          }
-
-          // If we got less than 100 messages, we've reached the end
-          if (messagesArray.length < 100) {
-            hasMore = false;
-          }
-        }
-
-        // Delete messages in batches (Discord allows bulk delete of up to 100 messages at a time)
-        // Messages must be less than 14 days old for bulk delete
-        const fourteenDaysAgo = Date.now() - (14 * 24 * 60 * 60 * 1000);
-        const bulkDeleteMessages = messagesToDelete.filter(msg => msg.createdTimestamp >= fourteenDaysAgo);
-        const individualDeleteMessages = messagesToDelete.filter(msg => msg.createdTimestamp < fourteenDaysAgo);
-
-        // Bulk delete messages (up to 100 at a time)
-        for (let i = 0; i < bulkDeleteMessages.length; i += 100) {
-          const batch = bulkDeleteMessages.slice(i, i + 100);
-          try {
-            await channel.bulkDelete(batch, true);
-            totalDeleted += batch.length;
-          } catch (error) {
-            console.error(`Error bulk deleting messages in channel ${channel.id}:`, error);
-            // Fall back to individual deletion for this batch
-            for (const msg of batch) {
-              try {
-                await msg.delete();
-                totalDeleted++;
-              } catch (err) {
-                // Message might already be deleted or inaccessible
-              }
-            }
-          }
-        }
-
-        // Delete older messages individually (if they're between 1 day and 14 days old)
-        for (const msg of individualDeleteMessages) {
-          try {
-            await msg.delete();
-            totalDeleted++;
-          } catch (error) {
-            // Message might already be deleted or inaccessible
-          }
-        }
-
+        totalDeleted += await deleteMessageBatch(targetChannel, messages);
       } catch (error) {
-        console.error(`Error processing channel ${channel.id}:`, error);
-        // Continue with other channels
+        console.error(`Error deleting messages in channel ${targetChannel.id}:`, error);
       }
     }
-  } catch (error) {
-    console.error(`Error deleting messages for user ${userId}:`, error);
   }
 
   return totalDeleted;

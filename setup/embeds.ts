@@ -29,8 +29,6 @@ export function buildPermissionsEmbed(config: ServerConfig): EmbedBuilder {
 
 export function buildLoggingEmbed(config: ServerConfig): EmbedBuilder {
   const logging = config.logging || ({} as any);
-  const hooks = (logging.webhooks || {}) as any;
-
   const modChannelId = logging.moderationLogChannelId || logging.logChannelId;
   const msgChannelId = logging.messageLogChannelId;
   const memChannelId = logging.memberLogChannelId;
@@ -39,23 +37,24 @@ export function buildLoggingEmbed(config: ServerConfig): EmbedBuilder {
   const msgChannelText = msgChannelId ? `<#${msgChannelId}>` : (modChannelId ? `Inherits ${modChannelText}` : "Not set");
   const memChannelText = memChannelId ? `<#${memChannelId}>` : (modChannelId ? `Inherits ${modChannelText}` : "Not set");
 
-  const modHookOk = Boolean(hooks.moderation?.id && hooks.moderation?.token && hooks.moderation?.channelId);
-  const msgHookOk = Boolean(hooks.messages?.id && hooks.messages?.token && hooks.messages?.channelId);
-  const memHookOk = Boolean(hooks.members?.id && hooks.members?.token && hooks.members?.channelId);
-
-  return buildBaseSetupEmbed("Logging", "Pick channels per section. The bot will auto-create a webhook in each selected channel.").addFields(
-    { name: "Enabled", value: logging.enabled ? "Yes" : "No", inline: true },
-    { name: "Moderation", value: `${modChannelText}\nWebhook: ${modHookOk ? "Yes" : "No"}`, inline: true },
-    { name: "Messages", value: `${msgChannelText}\nWebhook: ${msgHookOk ? "Yes" : "No"}`, inline: true },
-    { name: "Members", value: `${memChannelText}\nWebhook: ${memHookOk ? "Yes" : "No"}`, inline: true },
-  );
+  return buildBaseSetupEmbed(
+    "Logging",
+    "Set logging channels for moderation, message, and member events. Webhooks are created automatically when possible."
+  ).addFields(
+    { name: "Moderation", value: modChannelText, inline: true },
+    { name: "Messages", value: msgChannelText, inline: true },
+    { name: "Members", value: memChannelText, inline: true },
+  ).setFooter({ text: "If a section channel is unset, it will inherit the main moderation log channel when possible." });
 }
 
 export function buildHoneypotEmbed(config: ServerConfig): EmbedBuilder {
-  return buildBaseSetupEmbed("Honeypot").addFields(
+  return buildBaseSetupEmbed(
+    "Honeypot",
+    "Users who post in the trap channel get banned. Mod roles are exempt."
+  ).addFields(
     { name: "Enabled", value: config.features?.honeypot?.enabled ? "Yes" : "No", inline: true },
     { name: "Channel", value: config.features?.honeypot?.channelId ? `<#${config.features.honeypot.channelId}>` : "Not set", inline: true },
-    { name: "Auto Unban", value: config.features?.honeypot?.autoUnban ? "Yes" : "No", inline: true },
+    { name: "Auto Unban", value: config.features?.honeypot?.autoUnban ? "Yes (10s)" : "No", inline: true },
   );
 }
 
@@ -96,14 +95,12 @@ export function buildRoleRestoreEmbed(config: ServerConfig): EmbedBuilder {
 }
 
 export function buildAutoModerationEmbed(config: ServerConfig): EmbedBuilder {
-  return new EmbedBuilder()
-    .setTitle("Others")
-    .setColor("#0099ff")
-    .addFields(
-      { name: "Auto Embed", value: config.features?.autoEmbed?.enabled ? "Enabled" : "Disabled", inline: true },
-      { name: "Invite Block", value: config.features?.inviteBlock?.enabled ? "Enabled" : "Disabled", inline: true },
-    )
-    .setFooter({ text: "Auto Embed converts supported social links to embeddable format. Invite Block deletes Discord invites (mods are exempt)." })
-    .setTimestamp();
+  return buildBaseSetupEmbed(
+    "Extras",
+    "Enable or disable extra message protections and embed behavior."
+  ).addFields(
+    { name: "Auto Embed", value: config.features?.autoEmbed?.enabled ? "Enabled" : "Disabled", inline: true },
+    { name: "Invite Block", value: config.features?.inviteBlock?.enabled ? "Enabled" : "Disabled", inline: true },
+  ).setFooter({ text: "Auto Embed converts supported social media links into preview format. Invite Block removes Discord invite links." });
 }
 

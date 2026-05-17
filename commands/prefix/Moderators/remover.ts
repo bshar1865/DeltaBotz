@@ -1,8 +1,8 @@
 import { Message, PermissionFlagsBits } from 'discord.js';
-import configManager from '../../utils/ConfigManager';
-import { hasModAccess } from '../../utils/permissions';
-import { canModerateTarget } from '../../utils/canModerateTarget';
-import { MESSAGES } from '../../utils/messages';
+import configManager from '../../../utils/ConfigManager';
+import { hasModAccess } from '../../../utils/permissions';
+import { canModerateTarget } from '../../../utils/canModerateTarget';
+import { MESSAGES } from '../../../utils/messages';
 
 export default {
   name: 'remover',

@@ -1,7 +1,7 @@
 import { Message, Client, TextChannel, PermissionFlagsBits } from 'discord.js';
-import configManager from '../../utils/ConfigManager';
-import { hasModAccess } from '../../utils/permissions';
-import { getGuildDB } from '../../utils/db';
+import configManager from '../../../utils/ConfigManager';
+import { hasModAccess } from '../../../utils/permissions';
+import { getGuildDB } from '../../../utils/db';
 
 interface FAQEntry {
   name: string;

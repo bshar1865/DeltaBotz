@@ -1,7 +1,8 @@
 import { Events, Message, PartialMessage, type APIEmbed } from "discord.js";
 import type { Event } from "../types";
 import configManager from "../utils/ConfigManager";
-import { sendLogEmbed } from "../utils/logWebhooks";
+import { sendMessageLogEmbed } from "../utils/logWebhooks";
+import { deleteMessageHistory, getMessageHistory } from "../utils/messageHistory";
 
 function clip(input: string, max = 1000): string {
   const text = String(input ?? "");
@@ -29,11 +30,17 @@ const event: Event = {
     if (!config.logging?.enabled) return;
     if (!config.logging.events?.messageDelete) return;
 
-    const attachments = Array.from((message as Message).attachments?.values?.() ?? []).map((a) => a.url);
-    const contentChunks = chunk((message as Message).content || "", 1024);
+    const history = await getMessageHistory(guild.id, message.id);
+    const attachments = Array.from((message as Message).attachments?.values?.() ?? []).map((a) => a.url).length
+      ? Array.from((message as Message).attachments?.values?.() ?? []).map((a) => a.url)
+      : history?.attachments || [];
+    const content = (message as Message).content || history?.content || "";
+    const contentChunks = chunk(content, 1024);
 
+    const authorId = message.author?.id || history?.authorId || "unknown";
+    const authorTag = message.author?.tag || history?.authorTag || "Unknown";
     const fields: { name: string; value: string; inline?: boolean }[] = [
-      { name: "Author", value: `${message.author ? `<@${message.author.id}>` : "Unknown"} (${message.author?.id ?? "unknown"})`, inline: false },
+      { name: "Author", value: `<@${authorId}> (${authorId})`, inline: false },
       { name: "Channel", value: `<#${message.channelId}>`, inline: true },
       { name: "Message ID", value: message.id, inline: true },
     ];
@@ -58,10 +65,12 @@ const event: Event = {
     };
 
     try {
-      await sendLogEmbed(guild, config, "messages", embed);
+      await sendMessageLogEmbed(guild, config, "messageDelete", embed);
     } catch {
       // ignore
     }
+
+    await deleteMessageHistory(guild.id, message.id);
   },
 };
 

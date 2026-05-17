@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import type { Event } from "../types";
 import configManager from "../utils/ConfigManager";
-import { sendLogEmbed } from "../utils/logWebhooks";
+import { sendMessageLogEmbed } from "../utils/logWebhooks";
 
 function clip(input: string, max = 1000): string {
   const text = String(input ?? "");
@@ -43,7 +43,7 @@ const event: Event = {
     const embed: APIEmbed = {
       title: "Reaction Removed",
       description: jump,
-      color: 0xff0000,
+      color: 0x00008b,
       fields: [
         { name: "User", value: `<@${user.id}> (${user.id})`, inline: false },
         { name: "Channel", value: `<#${message.channelId}>`, inline: true },
@@ -55,7 +55,7 @@ const event: Event = {
     };
 
     try {
-      await sendLogEmbed(guild, config, "messages", embed);
+      await sendMessageLogEmbed(guild, config, "reactionRemove", embed);
     } catch {
       // ignore
     }

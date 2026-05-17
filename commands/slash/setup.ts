@@ -4,10 +4,9 @@ import {
   PermissionFlagsBits,
   MessageFlags
 } from 'discord.js';
-import { Command } from '../types';
-import configManager from '../utils/ConfigManager';
-import idclass from '../utils/idclass';
-import { buildSetupHomeEmbed, buildSetupMenuRow } from '../utils/setupUi';
+import { Command } from '../../types';
+import configManager from '../../utils/ConfigManager';
+import { buildSetupHomeEmbed, buildSetupMenuRow } from '../../utils/setupUi';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -21,10 +20,12 @@ const command: Command = {
     }
 
     try {
-      const isOwner = interaction.user.id === idclass.ownershipID();
+      const botOwnerId = process.env.BOT_OWNER_ID || process.env.OWNER_ID || "";
+      const isBotOwner = interaction.user.id === botOwnerId;
+      const isGuildOwner = interaction.guild?.ownerId === interaction.user.id;
       const hasAdmin = interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
-      if (!isOwner && !hasAdmin) {
-        await interaction.reply({ content: 'You need Administrator to use setup.', flags: MessageFlags.Ephemeral });
+      if (!isBotOwner && !isGuildOwner && !hasAdmin) {
+        await interaction.reply({ content: 'You need Administrator or server owner to use setup.', flags: MessageFlags.Ephemeral });
         return;
       }
       const config = await configManager.getOrCreateConfig(interaction.guild);

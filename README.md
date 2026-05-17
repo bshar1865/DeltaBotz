@@ -2,58 +2,46 @@
 
 # DeltaBotz
 
-An open-source Discord bot focused on moderation, logging, emoji copying, honeypot protection, and per-server configuration.
+Discord moderation bot with logging, honeypot traps, emoji copying, and per-server config via `/setup`.
 
-**Terms of Service:** [TOS.md](TOS.md)  
-**Privacy Policy:** [PRIVACY.md](PRIVACY.md)  
-**Support Server:** [Join Discord](https://discord.gg/u3jQjYmBby)
+- [Terms of Service](TOS.md)
+- [Privacy Policy](PRIVACY.md)
+- [Support server](https://discord.gg/u3jQjYmBby)
 
-## Features
+## What it does
 
-- **Moderation Commands** - Ban, kick, mute, warn, purge, and more
-- **Honeypot System** - Auto-ban trap channels to catch rule-breakers
-- **Auto Embed** - Converts supported social links to embeddable format (enabled by default)
-- **Invite Blocking** - Deletes Discord invite links (mods are exempt, disabled by default)
-- **FAQ** - Server-specific FAQ management
-- **Welcome/Goodbye Messages** - Customizable member join/leave messages
-- **Role Restore** - Restores roles when members rejoin using Quick.DB (disabled by default)
+Moderation (ban, kick, mute, warn, purge, etc.), webhook-based logging, honeypot channels, auto-embed for social links, invite blocking, FAQ, and optional welcome/goodbye messages plus role restore on rejoin.
 
 ## Quick Start
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. **Set up your environment**
+2. **Set up your env**
    Rename `example.env` to `.env`, then add your `DISCORD_TOKEN`.
+   You can also configure optional ids:
+   - `BOT_OWNER_ID` — the bot owner Discord user ID
+   - `ERROR_LOG_CHANNEL_ID` — channel ID for bot error logs
+   - `GUILD_LOG_CHANNEL_ID` — channel ID for server join logs
 
 3. **Run the bot**
 
-   Using Bun (recommended):
-   ```bash
-   bunx ts-node index.ts
-   ```
+   Using npx:
+   ```npx ts=node index.ts```
+   
+or you can use bun like I do,
+```bash
+bunx ts-node index.ts
+```
 
-   Or with Node:
-   ```bash
-   npx ts-node index.ts
-   ```
+## Configure a server
 
-## Setup
+Run `/setup` in Discord. From there you can set prefix, mod roles, log channels, honeypot, welcome/goodbye/role restore, auto-embed, and invite block.
 
-Use `/setup` in Discord to configure the bot with an interactive menu:
+Member join/leave logs need logging turned on and a member log channel (or a shared mod log channel). The bot needs **Manage Webhooks** and **Send Messages** in that channel; if webhook creation fails it falls back to posting the embed directly.
 
-- **Prefix** - Set custom bot prefix (default: `.`)
-- **Mod Roles** - Select roles that can use moderator commands
-- **Mod Commands** - Enable/disable all moderator commands globally
-- **Logging** - Configure log channels for events
-- **Honeypot** - Set up trap channels with auto-ban/delete options
-- **Welcome & Role restoration** - Welcome, Goodbye, and Role Restore
-- **Others** - Auto Embed and Invite Block
-
-
-## Data Layout
+## Data on disk
 
 ```
 configs/
@@ -62,52 +50,36 @@ configs/
     json.sqlite      # Per-guild database
 ```
 
-## Key Features
+## Project layout
 
-**Honeypot System** - Designate a channel as a honeypot. Users who post are automatically banned. Optional auto-unban after 10 seconds. Moderators are exempt.
-
-**Auto Embed** - Detects supported social links and converts them to embeddable format (Twitter/X, Instagram, TikTok, Reddit, Threads, Twitch, Spotify, DeviantArt, YouTube). Enabled by default.
-
-**Invite Blocking** - Deletes messages containing Discord invite links. Blocks `discord.gg/`, `discord.com/invite`, and `discordapp.com/invite` formats. Moderators are exempt.
-
-**Role Restore** - Stores user roles when they leave and restores them when they rejoin.
+```
+index.ts
+events/
+commands/
+  prefix/General|Moderators/
+  slash/
+loaders/
+utils/
+setup/
+configs/
+```
 
 ## Permissions
 
-- Commands in the `Moderators` folder require moderator roles
-- Moderator roles are set in `/setup` -> Mod Roles
-- Moderator commands can be globally disabled
-
-## Development
-
-**Project Structure:**
-```
-DeltaBotz/
-  index.ts                 # Main file
-  events/                  # Event handlers
-  prefix-commands/         # Text-based commands
-    General/               # Public commands
-    Moderators/            # Mod-only commands
-  slash-commands/          # Discord slash commands
-  loaders/                 # Command/event loaders
-  utils/                   # Utility modules
-  configs/                 # Per-server data
-```
+Commands under `Moderators/` need a role you pick in `/setup`. You can disable all mod commands globally from setup too.
 
 ## License
 
-MIT License
+MIT
 
-## Support
+## Links
 
-- Support Server: [https://discord.gg/u3jQjYmBby](https://discord.gg/u3jQjYmBby)
+- Support: https://discord.gg/u3jQjYmBby
 - Discord: @bshar1865
-- GitHub: [Issues](https://github.com/bshar1865/DeltaBotz/issues)
+- [Issues](https://github.com/bshar1865/DeltaBotz/issues)
 
-## Credits
-
-- Thanks to [50n50](https://github.com/50n50) – huge thanks to my beloved friend 50n50 for the profile picture and banner design!
+Banner and PFP by [50n50](https://github.com/50n50) — thank you so much my beloved friend
 
 ---
 
-**Disclaimer:** This bot is provided "as is" with no guarantees of uptime or feature permanence. Use at your own risk.
+Provided as-is; no uptime guarantees.

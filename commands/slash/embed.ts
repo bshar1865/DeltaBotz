@@ -6,8 +6,8 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-import { getEmbeddableOptions, getEmbeddableUrl } from "../prefix-commands/General/embed";
-import { setAutoEmbedSwitchState } from "../utils/autoEmbedSwitchState";
+import { getEmbeddableOptions, getEmbeddableUrl } from "../prefix/General/embed";
+import { setAutoEmbedSwitchState } from "../../utils/autoEmbedSwitchState";
 
 function cleanUrl(input: string): string {
   return input.replace(/^<|>$/g, "").trim();
