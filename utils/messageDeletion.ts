@@ -34,8 +34,9 @@ async function deleteMessageBatch(
   for (let i = 0; i < bulkable.length; i += BULK_CHUNK) {
     const chunk = bulkable.slice(i, i + BULK_CHUNK);
     try {
-      const result = await channel.bulkDelete(chunk, false);
-      deleted += result.size;
+      // bulkDelete accepts IDs or a Collection; pass IDs to avoid type/runtime issues
+      const result = await channel.bulkDelete(chunk.map((m) => m.id), false);
+      deleted += result?.size ?? (typeof result === 'number' ? result : 0);
     } catch {
       for (const msg of chunk) {
         try {
@@ -165,7 +166,8 @@ export async function deleteUserMessagesLastDay(guild: Guild, userId: string): P
   const textChannels = await getTextChannels(guild);
 
   for (const channel of textChannels) {
-    if (!me.permissionsIn(channel).has(PermissionFlagsBits.ManageMessages)) continue;
+    // Need ManageMessages plus ViewChannel and ReadMessageHistory to fetch and delete messages
+    if (!me.permissionsIn(channel).has([PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory])) continue;
 
     const channelsToScan: GuildTextBasedChannel[] = [channel, ...(await getThreadChannels(channel))];
 

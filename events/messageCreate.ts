@@ -50,28 +50,55 @@ async function handleHoneypot(message: Message, config: any) {
         me.permissions.has(PermissionsBitField.Flags.BanMembers) &&
         me.roles.highest.comparePositionTo(member.roles.highest) > 0
       ) {
+        // Use Discord's ban API to remove messages for recent days first, then run our deletion util as a fallback/retry
+        const configuredDays = Number(config.features?.honeypot?.deleteMessageDays ?? 1) || 0;
+        const deleteSeconds = configuredDays > 0 ? configuredDays * 24 * 60 * 60 : undefined;
+
+        let banSuccess = false;
         try {
-          const deletedCount = await deleteUserMessagesLastDay(message.guild!, message.author.id);
-          if (deletedCount > 0) {
-            console.log(`Deleted ${deletedCount} messages from user ${message.author.id} before honeypot ban`);
+          // Try modern option first (deleteMessageSeconds), fall back to legacy deleteMessageDays if needed
+          const banOptions: any = { reason: `Posted in honeypot channel (${message.channel.id})` };
+          if (deleteSeconds) banOptions.deleteMessageSeconds = deleteSeconds;
+          await message.guild!.members.ban(message.author.id, banOptions as any);
+          banSuccess = true;
+        } catch (err) {
+          try {
+            const banOptionsLegacy: any = { reason: `Posted in honeypot channel (${message.channel.id})` };
+            if (configuredDays) banOptionsLegacy.deleteMessageDays = configuredDays;
+            await message.guild!.members.ban(message.author.id, banOptionsLegacy as any);
+            banSuccess = true;
+          } catch (err2) {
+            banSuccess = false;
           }
-        } catch (error) {
-          console.error('Error deleting user messages before honeypot ban:', error);
         }
 
-        const banSuccess = await message.guild!.members
-          .ban(message.author.id, {
-            reason: `Posted in honeypot channel (${message.channel.id})`,
-          })
-          .then(() => true)
-          .catch(() => false);
+        const runDeletion = async () => {
+          try {
+            const deletedCount = await deleteUserMessagesLastDay(message.guild!, message.author.id);
+            if (deletedCount > 0) {
+              console.log(`Deleted ${deletedCount} messages from user ${message.author.id} after honeypot ban`);
+            }
+          } catch (error) {
+            console.error('Error deleting user messages after honeypot ban:', error);
+          }
+        };
 
-        if (banSuccess && config.features.honeypot.autoUnban) {
-          setTimeout(async () => {
-            try {
-              await message.guild!.members.unban(message.author.id, 'Auto-unban after honeypot ban');
-            } catch {}
-          }, 10 * 1000);
+        if (banSuccess) {
+          // Run deletion util immediately and schedule retries to ensure cleanup
+          runDeletion();
+          setTimeout(runDeletion, 10 * 1000);
+          setTimeout(runDeletion, 60 * 1000);
+
+          if (config.features.honeypot.autoUnban) {
+            setTimeout(async () => {
+              try {
+                await message.guild!.members.unban(message.author.id, 'Auto-unban after honeypot ban');
+              } catch {}
+            }, 10 * 1000);
+          }
+        } else {
+          // If ban failed, still attempt our deletion util as best-effort
+          runDeletion();
         }
       }
 
