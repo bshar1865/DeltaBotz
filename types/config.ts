@@ -143,6 +143,10 @@ export interface FeatureConfig {
   inviteBlock: {
     enabled: boolean;
   };
+  whitelistEnforcement: {
+    enabled: boolean;
+    whitelistedUserIds: string[];
+  };
 }
 
 export interface ChannelConfig {
@@ -259,6 +263,10 @@ export const DEFAULT_CONFIG: Partial<ServerConfig> = {
     },
     inviteBlock: {
       enabled: false,
+    },
+    whitelistEnforcement: {
+      enabled: false,
+      whitelistedUserIds: [],
     },
   },
   channels: {},

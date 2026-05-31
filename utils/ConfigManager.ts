@@ -162,6 +162,10 @@ export class ConfigManager {
         inviteBlock: {
           enabled: false,
         },
+        whitelistEnforcement: {
+          enabled: false,
+          whitelistedUserIds: [],
+        },
       },
       channels: {},
       roles: {
@@ -332,6 +336,12 @@ export class ConfigManager {
     }
     if (!validated.moderation) validated.moderation = DEFAULT_CONFIG.moderation!;
     if (!validated.features) validated.features = DEFAULT_CONFIG.features!;
+    if (!validated.features.whitelistEnforcement) {
+      validated.features.whitelistEnforcement = {
+        enabled: false,
+        whitelistedUserIds: [],
+      };
+    }
     if (!validated.channels) validated.channels = {};
     if (!validated.roles) validated.roles = { custom: {} };
 

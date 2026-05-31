@@ -29,6 +29,7 @@ import {
   buildRoleEmbed,
   buildRoleRestoreEmbed,
   buildWelcomeEmbed,
+  buildWhitelistEmbed,
 } from "./embeds";
 import {
   buildAutoModerationRows,
@@ -41,6 +42,7 @@ import {
   buildRoleRestoreRows,
   buildRoleRows,
   buildWelcomeRows,
+  buildWhitelistRows,
 } from "./rows";
 import { handleSetupMenu } from "./menu";
 
@@ -205,6 +207,14 @@ export async function handleSetupButton(interaction: ButtonInteraction): Promise
   if (customId === "toggle_honeypot_autounban") {
     config.features.honeypot = { ...(config.features.honeypot || {}), autoUnban: !config.features?.honeypot?.autoUnban };
     await saveConfigAndRefresh(interaction, config, buildHoneypotEmbed(config), buildHoneypotRows(true));
+    return true;
+  }
+  if (customId === "toggle_whitelist_enforcement") {
+    config.features.whitelistEnforcement = {
+      ...(config.features.whitelistEnforcement || { enabled: false, whitelistedUserIds: [] }),
+      enabled: !config.features?.whitelistEnforcement?.enabled,
+    };
+    await saveConfigAndRefresh(interaction, config, buildWhitelistEmbed(config), buildWhitelistRows(true));
     return true;
   }
 

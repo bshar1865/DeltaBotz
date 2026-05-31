@@ -12,8 +12,8 @@ export async function loadPrefixCommands(): Promise<void> {
         try {
             const command = await import(file);
             if (command.default && command.default.name) {
-                // Mark commands from Moderators folder as moderator commands
-                const isModeratorCommand = file.includes(path.sep + 'Moderators' + path.sep) || file.includes('/Moderators/');
+                // Mark commands from Moderators folder as moderator commands, except whitelist
+                const isModeratorCommand = (file.includes(path.sep + 'Moderators' + path.sep) || file.includes('/Moderators/')) && path.basename(file) !== 'whitelist.ts';
                 if (isModeratorCommand) {
                     command.default.isModeratorCommand = true;
                 }

@@ -11,6 +11,7 @@ import {
   buildRoleEmbed,
   buildRoleRestoreEmbed,
   buildWelcomeEmbed,
+  buildWhitelistEmbed,
 } from "./embeds";
 import {
   buildAutoModerationRows,
@@ -23,6 +24,7 @@ import {
   buildRoleRestoreRows,
   buildRoleRows,
   buildWelcomeRows,
+  buildWhitelistRows,
 } from "./rows";
 
 export async function handleSetupMenu(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -53,6 +55,10 @@ export async function handleSetupMenu(interaction: StringSelectMenuInteraction):
     case "honeypot":
       embed = buildHoneypotEmbed(config);
       rows = buildHoneypotRows(true);
+      break;
+    case "whitelist_enforcement":
+      embed = buildWhitelistEmbed(config);
+      rows = buildWhitelistRows(true);
       break;
     case "welcome":
       embed = buildWelcomeEmbed(config);

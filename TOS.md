@@ -69,9 +69,15 @@ To the maximum extent permitted by law, both bshar1865 and Blehruzki shall not b
 
 - Any damages resulting from use or inability to use the Bot
 
+- Any results from enforcement policies configured by server administrators, including whitelist enforcement
+
 You use the Bot at your own risk.
 
-9. Changes to These Terms
+9. Whitelist Enforcement
+
+By enabling Whitelist Enforcement, you agree that enforcement is managed by your server settings, and that the Bot is not responsible for member management decisions, moderation outcomes, or actions taken by your server moderators.
+
+10. Changes to These Terms
 
 We may update these Terms at any time. Continued use of the Bot after changes implies acceptance of the updated Terms.
 

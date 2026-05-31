@@ -10,6 +10,22 @@ const event: Event = {
   async execute(member: GuildMember) {
     // Get server configuration
     const config = await configManager.getOrCreateConfig(member.guild);
+
+    if (config.features?.whitelistEnforcement?.enabled) {
+      const whitelisted = config.features?.whitelistEnforcement?.whitelistedUserIds?.includes(member.id);
+      if (!member.user.bot && !whitelisted) {
+        try {
+          await member.send(
+            `You are not whitelisted for **${member.guild.name}**. If you believe this is a mistake, please contact a server moderator.`
+          );
+        } catch {
+          // ignore DM failure
+        }
+
+        await member.kick('Not whitelisted on join').catch(() => {});
+        return;
+      }
+    }
     
     // Restore roles if enabled
     let restoredRoleIds: string[] = [];

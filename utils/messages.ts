@@ -98,6 +98,15 @@ export const MESSAGES = {
       dmFailedSoftban: (userId: Id) => `Could not send Softban DM to <@${userId}>.`,
     },
   },
+  whitelist: {
+    usage: 'Usage: `.whitelist <userId|mention> [userId...]` to add users, `.whitelist list` to view the whitelist, or `.whitelist remove <userId> [userId...]` to remove users.',
+    added: (count: number) => `${count} users has been __**WHITELISTED**__`,
+    alreadyWhitelisted: 'All provided users were already whitelisted.',
+    removed: (count: number) => `${count} users has been __**REMOVED**__ from the whitelist.`,
+    noWhitelisted: 'No users are currently whitelisted.',
+    invalidIds: 'Please provide one or more valid user IDs or mentions.',
+    disabled: 'Whitelist enforcement is not enabled on this server.',
+  },
 
   purge: {
     invalidAmount: "Please provide a number between 1 and 100 for the amount of messages to delete.",

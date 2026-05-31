@@ -107,6 +107,17 @@ export function buildHoneypotRows(includeBack?: boolean) {
   return rows;
 }
 
+export function buildWhitelistRows(includeBack?: boolean) {
+  const toggleWhitelist = new ButtonBuilder()
+    .setCustomId("toggle_whitelist_enforcement")
+    .setLabel("Toggle Whitelist Enforcement")
+    .setStyle(ButtonStyle.Primary);
+
+  const rows: any[] = [new ActionRowBuilder<ButtonBuilder>().addComponents(toggleWhitelist)];
+  if (includeBack) rows.push(backRow());
+  return rows;
+}
+
 export function buildWelcomeRows(includeBack?: boolean) {
   const toggle = new ButtonBuilder().setCustomId("toggle_welcome").setLabel("Toggle Welcome").setStyle(ButtonStyle.Primary);
   const edit = new ButtonBuilder().setCustomId("edit_welcome_embed").setLabel("Edit Embed").setStyle(ButtonStyle.Secondary);

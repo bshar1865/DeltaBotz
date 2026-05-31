@@ -58,6 +58,25 @@ export function buildHoneypotEmbed(config: ServerConfig): EmbedBuilder {
   );
 }
 
+export function buildWhitelistEmbed(config: ServerConfig): EmbedBuilder {
+  const enabled = Boolean(config.features?.whitelistEnforcement?.enabled);
+  const whitelist = config.features?.whitelistEnforcement?.whitelistedUserIds || [];
+  const countText = whitelist.length ? `${whitelist.length} users` : "None";
+
+  return buildBaseSetupEmbed(
+    "Whitelist Enforcement",
+    "Require new joins to be explicitly whitelisted. Existing members are not removed. Use `.whitelist <userId>` to whitelist users. Enabling this means you agree to the bot's Terms of Service."
+  ).addFields(
+    { name: "Enabled", value: enabled ? "Yes" : "No", inline: true },
+    { name: "Whitelisted IDs", value: countText, inline: true },
+    {
+      name: "Note",
+      value: "This does not kick members who were already in the server. Only new joiners who are not whitelisted are DM'd and kicked.",
+      inline: false,
+    },
+  );
+}
+
 function shorten(input: string, max = 900): string {
   const text = String(input ?? "");
   if (text.length <= max) return text;
