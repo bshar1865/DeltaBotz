@@ -74,13 +74,7 @@ export default {
                     name: 'Credits',
                     value: [
                         '**Developer:** Delta Team',
-                        '**Hosted On:** CloudPanel Server (thanks to moonpower)'
-                    ].join('\n')
-                },
-                {
-                    name: 'Support',
-                    value: [
-                        `**Support Server:** ${process.env.SUPPORT_SERVER_URL || 'https://discord.gg/u3jQjYmBby'}`
+                        '**Hosted On:** CloudPanel Server (thanks to @moonpower.)'
                     ].join('\n')
                 }
             )

@@ -85,4 +85,4 @@ We may update these Terms at any time. Continued use of the Bot after changes im
 
 For questions or concerns, contact:
 Discord: @bshar1865
-Support Server: https://discord.gg/u3jQjYmBby
+Email: bsharesfky@gmail.com

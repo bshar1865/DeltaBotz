@@ -6,8 +6,6 @@ Discord moderation bot with logging, honeypot traps, emoji copying, and per-serv
 
 - [Terms of Service](TOS.md)
 - [Privacy Policy](PRIVACY.md)
-- [Support server](https://discord.gg/u3jQjYmBby)
-
 ## What it does
 
 Moderation (ban, kick, mute, warn, purge, etc.), webhook-based logging, honeypot channels, auto-embed for social links, invite blocking, FAQ, and optional welcome/goodbye messages plus role restore on rejoin.
@@ -74,7 +72,7 @@ MIT
 
 ## Links
 
-- Support: https://discord.gg/u3jQjYmBby
+- Email: bsharesfky@gmail.com
 - Discord: @bshar1865
 - [Issues](https://github.com/bshar1865/DeltaBotz/issues)
 
