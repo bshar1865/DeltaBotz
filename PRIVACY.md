@@ -24,7 +24,7 @@ Configuration settings
 
 Command usage metadata
 
-Message content is not collected or stored, unless explicitly required for a specific feature (e.g. moderation or logging).
+Message content may be temporarily cached in memory for up to 15 minutes for configured edit/delete logging.
 
 3. Purpose of Data Collection
 
