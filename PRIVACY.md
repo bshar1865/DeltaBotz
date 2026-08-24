@@ -1,6 +1,6 @@
 Privacy Policy
 
-Last updated: 02/03/2026
+Last updated: 08/24/2026
 
 1. Transparency & Open Source
 
